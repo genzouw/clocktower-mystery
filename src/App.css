@@ -582,7 +582,8 @@
 .toast {
   position: fixed;
   left: 50%;
-  bottom: calc(90px + env(safe-area-inset-bottom));
+  /* 謎のモーダルは下から開くため、操作ボタンと重ならないよう上部に出す */
+  top: calc(56px + env(safe-area-inset-top));
   transform: translateX(-50%);
   background: var(--ok);
   color: #0d2416;
