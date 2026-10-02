@@ -1,0 +1,27 @@
+name: Gitleaks
+
+# 本ワークフローは genzouw/ci-workflows の reusable workflow を呼び出す薄いスタブ。
+# ロジックの実体・変更は ci-workflows 側で一元管理する (トリガー定義のみここで持つ)。
+# 参照 SHA の更新は Renovate (github-actions manager) が自動で PR を出す。
+# 必須チェック (context: "gitleaks / Scan for leaked secrets") のため paths フィルタ禁止。
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # 毎週月曜 05:00 JST (= 日曜 20:00 UTC) に履歴全体を再スキャン
+    - cron: '0 20 * * 0'
+  workflow_dispatch:
+
+concurrency:
+  group: gitleaks-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  gitleaks:
+    uses: genzouw/ci-workflows/.github/workflows/gitleaks.yml@eb84d0c974989515c0b26acc055948416f256533 # v1.1.1

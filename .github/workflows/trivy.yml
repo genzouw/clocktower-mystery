@@ -1,0 +1,26 @@
+name: Trivy Scan
+
+# 本ワークフローは genzouw/ci-workflows の reusable workflow を呼び出す薄いスタブ。
+# ロジックの実体・変更は ci-workflows 側で一元管理する (トリガー定義のみここで持つ)。
+# 参照 SHA の更新は Renovate (github-actions manager) が自動で PR を出す。
+# 必須チェック (context: "trivy / Trivy filesystem scan") のため paths フィルタ禁止。
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  schedule:
+    # 毎週月曜 04:00 JST (= 日曜 19:00 UTC) に再スキャンして新規 CVE を拾う
+    - cron: '0 19 * * 0'
+
+concurrency:
+  group: trivy-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  trivy:
+    uses: genzouw/ci-workflows/.github/workflows/trivy.yml@eb84d0c974989515c0b26acc055948416f256533 # v1.1.1

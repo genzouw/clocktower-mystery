@@ -1,0 +1,51 @@
+:root {
+  --bg: #120e14;
+  --panel: #1f1922;
+  --panel-2: #2a2230;
+  --text: #f1e9dc;
+  --muted: #b3a89a;
+  --accent: #e0b354;
+  --accent-ink: #2a1d05;
+  --danger: #e06b5a;
+  --ok: #7cc49a;
+  --line: rgba(241, 233, 220, 0.16);
+  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', serif;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+  background: var(--bg);
+}
+
+body {
+  overscroll-behavior: none;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+
+p {
+  margin: 0 0 10px;
+  line-height: 1.75;
+}
