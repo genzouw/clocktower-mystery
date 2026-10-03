@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { PUZZLE_ORDER } from './puzzles'
 import { ROOMS } from './rooms'
-import type { PuzzleId, RoomId } from './types'
+import type { RoomId } from './types'
 import {
   LAYOUT,
   PLAYER_RADIUS,
@@ -41,7 +40,7 @@ function explore(world: World, start: Vec2): Vec2[] {
       { x: p.x, z: p.z - STEP },
     ].filter((q) => roomAt(q) && !blocked(q, world.colliders))
     for (const portal of world.portals) {
-      if (!portal.locked && isAtPortal(portal, p)) {
+      if (isAtPortal(portal, p)) {
         next.push(portalArrival(world, portal.room, portal.exit).pos)
       }
     }
@@ -69,21 +68,8 @@ describe('館の間取り', () => {
     }
   })
 
-  it('最初は鍵の掛かった扉が閉じていて、謎を解くと開く', () => {
-    const lockedPairs = (solved: PuzzleId[]) =>
-      buildWorld(solved)
-        .doorways.filter((d) => d.locked)
-        .map((d) => [...d.rooms].sort().join('-'))
-        .sort()
-    expect(lockedPairs([])).toEqual(
-      ['corridor-hall', 'corridor-study', 'greenhouse-music', 'cellar-tower'].sort(),
-    )
-    expect(lockedPairs(['p1'])).not.toContain('corridor-hall')
-    expect(lockedPairs(PUZZLE_ORDER)).toEqual([])
-  })
-
   it('初期位置と階段の出口は、壁や台座にめり込んでいない', () => {
-    const world = buildWorld(PUZZLE_ORDER)
+    const world = buildWorld()
     for (const id of Object.keys(ROOMS) as RoomId[]) {
       const { pos } = spawnPoint(id)
       expect(blocked(pos, world.colliders), id).toBe(false)
@@ -96,14 +82,8 @@ describe('館の間取り', () => {
     }
   })
 
-  it('謎が未解決なら玄関ホールから出られない', () => {
-    const world = buildWorld([])
-    const reached = new Set(explore(world, spawnPoint('hall').pos).map((p) => roomAt(p)))
-    expect([...reached]).toEqual(['hall'])
-  })
-
-  it('すべての謎を解けば、玄関から歩いて全部屋・全部の物に手が届く', () => {
-    const world = buildWorld(PUZZLE_ORDER)
+  it('最初から、玄関から歩いて全部屋・全部の物に手が届く', () => {
+    const world = buildWorld()
     const points = explore(world, spawnPoint('hall').pos)
     const reached = new Set(points.map((p) => roomAt(p)))
     expect([...reached].sort()).toEqual(Object.keys(ROOMS).sort())
@@ -120,7 +100,7 @@ describe('館の間取り', () => {
   })
 
   it('台座は部屋の内側に収まり、扉の通り道をふさがない', () => {
-    const world = buildWorld(PUZZLE_ORDER)
+    const world = buildWorld()
     for (const room of Object.values(ROOMS)) {
       for (const h of room.hotspots) {
         const p = hotspotPosition(room.id, h)
@@ -135,7 +115,7 @@ describe('館の間取り', () => {
 
 describe('階段の扉', () => {
   it('扉のある部屋の正面からだけ反応し、壁の裏の部屋からは反応しない', () => {
-    const world = buildWorld(PUZZLE_ORDER)
+    const world = buildWorld()
     const up = world.portals.find((p) => p.room === 'corridor' && p.exit.dir === 'up')!
     // 廊下の北壁の扉。廊下側（南）からは反応し、壁の向こうの図書室からは反応しない
     expect(isAtPortal(up, { x: up.x, z: up.z + 0.5 })).toBe(true)

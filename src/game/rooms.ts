@@ -1,6 +1,4 @@
-import type { PuzzleId, Room, RoomId } from './types'
-
-const ALL_BEFORE_FINAL: PuzzleId[] = ['p1', 'p2', 'p3', 'p4', 'p5', 'p6', 'p7', 'p8']
+import type { Room, RoomId } from './types'
 
 export const ROOMS: Record<RoomId, Room> = {
   hall: {
@@ -8,35 +6,24 @@ export const ROOMS: Record<RoomId, Room> = {
     name: '玄関ホール',
     floor: '1F',
     map: { x: 1, y: 3 },
-    description: '高い天井にシャンデリアが揺れる。奥の扉には重そうな数字錠。',
+    description: '高い天井にシャンデリアが揺れる。奥の扉の先が中央廊下だ。',
     background: 'linear-gradient(180deg, #3b2a1e 0%, #5a3d28 55%, #2a1c12 56%, #3d2a1c 100%)',
     exits: [
       {
         dir: 'north',
         to: 'corridor',
         label: '廊下',
-        requires: ['p1'],
-        lockedText: '数字錠が掛かっている。',
       },
     ],
     hotspots: [
-      {
-        id: 'hall-lock',
-        emoji: '🔒',
-        name: '扉の数字錠',
-        x: 32,
-        y: 14,
-        text: '真鍮の板に何か刻まれている。',
-        puzzle: 'p1',
-      },
       {
         id: 'hall-shoes',
         emoji: '👞',
         name: '靴箱',
         x: 18,
         y: 72,
-        text: '使用人と家族の靴が並ぶ。名札にはサイズが書いてある。',
-        evidence: 'shoes',
+        text: '住人の靴をしまう靴箱。扉に 4桁の数字錠が掛かっている。',
+        puzzle: 'p1',
       },
       {
         id: 'hall-portrait',
@@ -71,22 +58,16 @@ export const ROOMS: Record<RoomId, Room> = {
         dir: 'west',
         to: 'study',
         label: '書斎',
-        requires: ['p2'],
-        lockedText: '書斎には鍵が掛かっている。鍵は誰が持っているのだろう。',
       },
       {
         dir: 'up',
         to: 'bedroom',
         label: '2階・伯爵の寝室',
-        requires: ['p5'],
-        lockedText: '階段の格子扉に鍵が掛かっている。合鍵は厨房にあるらしい。',
       },
       {
         dir: 'down',
         to: 'cellar',
         label: '地下室',
-        requires: ['p8'],
-        lockedText: '地下への扉は固く施錠されている。',
       },
     ],
     hotspots: [
@@ -197,8 +178,6 @@ export const ROOMS: Record<RoomId, Room> = {
         dir: 'east',
         to: 'greenhouse',
         label: '温室',
-        requires: ['p4'],
-        lockedText: '温室へのガラス戸は施錠されている。',
       },
     ],
     hotspots: [
@@ -364,7 +343,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '日記',
         x: 20,
         y: 40,
-        text: '伯爵の日記。誕生日のことが書いてある。',
+        text: '伯爵の日記。ところどころページが破り取られている。',
       },
       {
         id: 'bedroom-window',
@@ -381,7 +360,7 @@ export const ROOMS: Record<RoomId, Room> = {
     name: '地下室',
     floor: 'B1',
     map: { x: 0, y: 3 },
-    description: 'ひんやりとした石造りの部屋。奥に時計塔へ続く鉄扉。',
+    description: 'ひんやりとした石造りの部屋。奥の鉄扉の先に、時計塔への螺旋階段が続いている。',
     background: 'linear-gradient(180deg, #151515 0%, #2b2b2b 55%, #3a3530 56%, #1f1c19 100%)',
     exits: [
       { dir: 'up', to: 'corridor', label: '中央廊下' },
@@ -389,8 +368,6 @@ export const ROOMS: Record<RoomId, Room> = {
         dir: 'north',
         to: 'tower',
         label: '時計塔',
-        requires: [...ALL_BEFORE_FINAL, 'p9'],
-        lockedText: '鉄扉は閉ざされている。館の謎をすべて解いてからでないと開かないようだ。',
       },
     ],
     hotspots: [
@@ -400,7 +377,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '天秤と金貨',
         x: 50,
         y: 58,
-        text: '鉄扉の前に古い天秤と8枚の金貨。',
+        text: '古い天秤と8枚の金貨。台座に何か彫られている。',
         puzzle: 'p9',
       },
       {
@@ -433,9 +410,4 @@ export const ROOMS: Record<RoomId, Room> = {
       },
     ],
   },
-}
-
-/** 未施錠か、必要な謎をすべて解いていれば通れる */
-export function canPass(requires: PuzzleId[] | undefined, solved: PuzzleId[]): boolean {
-  return (requires ?? []).every((id) => solved.includes(id))
 }

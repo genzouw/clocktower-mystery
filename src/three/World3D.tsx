@@ -1,17 +1,16 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Mesh, PointLight, Sprite } from 'three'
+import { isUnlocked } from '../game/puzzles'
 import { ROOMS } from '../game/rooms'
 import type { Hotspot, PuzzleId, RoomId } from '../game/types'
 import {
   DOOR_HEIGHT,
-  DOOR_WIDTH,
   PLINTH_SIZE,
   ROOM_SIZE,
   THEME,
   WALL_HEIGHT,
   buildWorld,
-  TRIGGER_DISTANCE,
   hotspotPosition,
   isAtPortal,
   portalArrival,
@@ -24,6 +23,9 @@ import {
 import { Joystick } from './Joystick'
 import { PlayerRig } from './playerRig'
 import { emojiTexture, labelTexture } from './textures'
+
+/** 館の形は謎の進行に依存しないので、読み込み時に一度だけ組み立てる */
+const WORLD = buildWorld()
 
 const EYE_HEIGHT = 1.6
 const WALK_SPEED = 2.6
@@ -40,13 +42,11 @@ interface Props {
   paused: boolean
   onRoomChange: (room: RoomId) => void
   onHotspot: (room: RoomId, h: Hotspot) => void
-  onLocked: (text: string) => void
   onToast: (text: string) => void
   onFirstMove: () => void
 }
 
 export function World3D(props: Props) {
-  const world = useMemo(() => buildWorld(props.solved), [props.solved])
   const [rig] = useState(() => new PlayerRig(spawnPoint(props.room)))
   const stick = useRef({ x: 0, y: 0 })
   const look = useRef<{ id: number; x: number; y: number } | null>(null)
@@ -67,11 +67,7 @@ export function World3D(props: Props) {
   }, [rig, props.room])
 
   const enterPortal = (portal: Portal) => {
-    if (portal.locked) {
-      latest.current.onLocked(portal.exit.lockedText ?? '扉は開かない。')
-      return
-    }
-    rig.placeAt(portalArrival(world, portal.room, portal.exit))
+    rig.placeAt(portalArrival(WORLD, portal.room, portal.exit))
     latest.current.onRoomChange(portal.exit.to)
   }
 
@@ -111,14 +107,14 @@ export function World3D(props: Props) {
         <PlayerController
           rig={rig}
           stick={stick}
-          world={world}
+          world={WORLD}
           latest={latest}
           onPortal={enterPortal}
         />
         <Rooms />
-        <Walls world={world} />
-        <Doorways world={world} />
-        <Portals world={world} onTap={enterPortal} />
+        <Walls world={WORLD} />
+        <Doorways world={WORLD} />
+        <Portals world={WORLD} onTap={enterPortal} />
         <Hotspots solved={props.solved} onTap={tapHotspot} />
       </Canvas>
       <Joystick onChange={(v) => (stick.current = v)} />
@@ -194,12 +190,6 @@ function PlayerController({
         const key = `portal:${portal.room}:${portal.exit.dir}`
         nowNear.add(key)
         if (!near.current.has(key)) onPortal(portal)
-      }
-      for (const door of world.doorways) {
-        if (!door.locked || rig.distanceTo(door) > TRIGGER_DISTANCE) continue
-        const key = `door:${door.x},${door.z}`
-        nowNear.add(key)
-        if (!near.current.has(key)) props.onLocked(door.lockedText)
       }
       near.current = nowNear
     }
@@ -320,28 +310,6 @@ function Doorways({ world }: { world: World }) {
                 />
               )
             })}
-            {d.locked && (
-              <>
-                <mesh position={[d.x, DOOR_HEIGHT / 2, d.z]}>
-                  <boxGeometry
-                    args={
-                      d.axis === 'x'
-                        ? [DOOR_WIDTH, DOOR_HEIGHT, 0.12]
-                        : [0.12, DOOR_HEIGHT, DOOR_WIDTH]
-                    }
-                  />
-                  <meshLambertMaterial color="#5a3418" />
-                </mesh>
-                {[-1, 1].map((s) => (
-                  <Emoji
-                    key={s}
-                    emoji="🔒"
-                    size={0.4}
-                    position={[d.x + normal.x * s * 0.2, 1.3, d.z + normal.z * s * 0.2]}
-                  />
-                ))}
-              </>
-            )}
           </group>
         )
       })}
@@ -369,11 +337,11 @@ function Portals({ world, onTap }: { world: World; onTap: (p: Portal) => void })
               }}
             >
               <boxGeometry args={p.axis === 'x' ? [1.3, 2.2, 0.06] : [0.06, 2.2, 1.3]} />
-              <meshLambertMaterial color={p.locked ? '#3a2412' : '#1a0f08'} />
+              <meshLambertMaterial color="#1a0f08" />
             </mesh>
             <Label text={`${stairs}：${p.exit.label}`} position={[lx, 2.55, lz]} color="#e0b354" />
             <Emoji
-              emoji={p.locked ? '🔒' : p.exit.dir === 'down' ? '⬇️' : '⬆️'}
+              emoji={p.exit.dir === 'down' ? '⬇️' : '⬆️'}
               size={0.45}
               position={[ex, 1.3, ez]}
             />
@@ -400,6 +368,7 @@ function Hotspots({
             room={room.id}
             hotspot={h}
             done={h.puzzle ? solved.includes(h.puzzle) : false}
+            locked={h.puzzle ? !isUnlocked(h.puzzle, solved) : false}
             onTap={onTap}
           />
         )),
@@ -412,11 +381,14 @@ function HotspotObject({
   room,
   hotspot,
   done,
+  locked,
   onTap,
 }: {
   room: RoomId
   hotspot: Hotspot
   done: boolean
+  /** 手がかりが足りず、まだ答えられない謎 */
+  locked: boolean
   onTap: (room: RoomId, h: Hotspot) => void
 }) {
   const p = hotspotPosition(room, hotspot)
@@ -430,7 +402,7 @@ function HotspotObject({
   useFrame(({ clock }) => {
     const t = clock.elapsedTime + phase
     if (icon.current) icon.current.position.y = plinthHeight + 0.45 + Math.sin(t * 2) * 0.05
-    if (ring.current && isPuzzle && !done) {
+    if (ring.current && isPuzzle && !done && !locked) {
       const s = 1 + Math.sin(t * 3) * 0.12
       ring.current.scale.set(s, s, 1)
     }
@@ -443,8 +415,14 @@ function HotspotObject({
   }
 
   const { texture } = emojiTexture(hotspot.emoji)
-  const label = isPuzzle ? `${done ? '【解決】' : '【謎】'}${hotspot.name}` : hotspot.name
-  const labelColor = isPuzzle ? (done ? '#7cc49a' : '#e0b354') : undefined
+  // 謎の状態ごとの名札と輪の色（解決済み・手がかり不足・挑戦できる）
+  const status = done
+    ? { prefix: '【解決】', color: '#7cc49a' }
+    : locked
+      ? { prefix: '【手がかり不足】', color: '#9a8f86' }
+      : { prefix: '【謎】', color: '#e0b354' }
+  const label = isPuzzle ? `${status.prefix}${hotspot.name}` : hotspot.name
+  const labelColor = isPuzzle ? status.color : undefined
 
   return (
     <group position={[p.x, 0, p.z]}>
@@ -455,7 +433,7 @@ function HotspotObject({
       {isPuzzle && (
         <mesh ref={ring} rotation-x={-Math.PI / 2} position-y={plinthHeight + 0.01}>
           <ringGeometry args={[0.26, 0.34, 32]} />
-          <meshBasicMaterial color={done ? '#7cc49a' : '#e0b354'} />
+          <meshBasicMaterial color={status.color} />
         </mesh>
       )}
       <sprite

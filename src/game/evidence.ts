@@ -44,6 +44,6 @@ export const EVIDENCE: Record<EvidenceId, Evidence> = {
   letter: {
     id: 'letter',
     title: '伯爵の手紙',
-    text: '「この館で最も時計に詳しい者が、塔の大時計の中に何かを隠しているようだ」。地下室の鍵が同封されていた。',
+    text: '「この館で最も時計に詳しい者が、塔の大時計の中に何かを隠しているようだ」。',
   },
 }

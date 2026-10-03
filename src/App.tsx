@@ -1,8 +1,9 @@
 import { Suspense, lazy, useCallback, useEffect, useReducer, useState } from 'react'
 import './App.css'
 import { EVIDENCE } from './game/evidence'
-import { PUZZLES } from './game/puzzles'
+import { PUZZLES, cluesFrom } from './game/puzzles'
 import { ROOMS } from './game/rooms'
+import { puzzleStats } from './game/score'
 import { loadState, reducer, saveState } from './game/state'
 import type { EvidenceId, Hotspot, PuzzleId, RoomId } from './game/types'
 import { MapView, Modal, Notebook } from './components/Panels'
@@ -15,7 +16,6 @@ const World3D = lazy(() => import('./three/World3D').then((m) => ({ default: m.W
 type Overlay =
   | { kind: 'puzzle'; id: PuzzleId }
   | { kind: 'look'; hotspot: Hotspot; newEvidence: EvidenceId | null }
-  | { kind: 'locked'; text: string }
   | { kind: 'notebook' }
   | { kind: 'map' }
   | null
@@ -30,7 +30,7 @@ export default function App() {
 
   useEffect(() => {
     if (!toast) return
-    const t = window.setTimeout(() => setToast(null), 2500)
+    const t = window.setTimeout(() => setToast(null), toast.includes('\n') ? 4000 : 2500)
     return () => window.clearTimeout(t)
   }, [toast])
 
@@ -49,7 +49,11 @@ export default function App() {
   const handleSolve = (id: PuzzleId) => {
     dispatch({ type: 'solve', id })
     const reward = PUZZLES[id].reward
-    setToast(reward ? `手帳に「${EVIDENCE[reward].title}」を記録した` : '謎を解いた！')
+    const messages = [
+      reward ? `手帳に「${EVIDENCE[reward].title}」を記録した` : '謎を解いた！',
+      ...cluesFrom(id).map((p) => `「${PUZZLES[p].title}」の手がかりを見つけた`),
+    ]
+    setToast(messages.join('\n'))
   }
 
   const hasProgress = state.solved.length > 0 || state.visited.length > 1
@@ -65,8 +69,7 @@ export default function App() {
   }
 
   if (state.cleared) {
-    const hintsTotal = Object.values(state.hintsUsed).reduce((a, b) => a + (b ?? 0), 0)
-    return <EndingScreen hintsTotal={hintsTotal} onRestart={() => dispatch({ type: 'reset' })} />
+    return <EndingScreen stats={puzzleStats(state)} onRestart={() => dispatch({ type: 'reset' })} />
   }
 
   const room = ROOMS[state.room]
@@ -80,7 +83,6 @@ export default function App() {
           paused={overlay !== null}
           onRoomChange={handleRoomChange}
           onHotspot={handleHotspot}
-          onLocked={(text) => setOverlay({ kind: 'locked', text: text || '扉は開かない。' })}
           onToast={setToast}
           onFirstMove={() => setShowGuide(false)}
         />
@@ -118,10 +120,12 @@ export default function App() {
         <PuzzleModal
           key={overlay.id}
           puzzle={PUZZLES[overlay.id]}
-          solved={state.solved.includes(overlay.id)}
+          solvedIds={state.solved}
           hintsUsed={state.hintsUsed[overlay.id] ?? 0}
+          mistakes={state.mistakes[overlay.id] ?? 0}
           onSolve={() => handleSolve(overlay.id)}
           onHint={() => dispatch({ type: 'hint', id: overlay.id })}
+          onMistake={() => dispatch({ type: 'mistake', id: overlay.id })}
           onClose={() => setOverlay(null)}
         />
       )}
@@ -140,15 +144,10 @@ export default function App() {
           )}
         </Modal>
       )}
-      {overlay?.kind === 'locked' && (
-        <Modal title="🔒 進めない" onClose={() => setOverlay(null)}>
-          <p>{overlay.text}</p>
-        </Modal>
-      )}
       {overlay?.kind === 'notebook' && (
         <Notebook
           evidence={state.evidence}
-          solved={state.solved}
+          stats={puzzleStats(state)}
           onClose={() => setOverlay(null)}
         />
       )}

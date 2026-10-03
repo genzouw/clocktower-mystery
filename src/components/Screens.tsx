@@ -1,3 +1,6 @@
+import { detectiveRank, totals, type PuzzleStat } from '../game/score'
+import { ScoreSummary, ScoreTable } from './ScoreTable'
+
 export function TitleScreen({
   hasProgress,
   onStart,
@@ -41,13 +44,9 @@ export function TitleScreen({
   )
 }
 
-export function EndingScreen({
-  hintsTotal,
-  onRestart,
-}: {
-  hintsTotal: number
-  onRestart: () => void
-}) {
+export function EndingScreen({ stats, onRestart }: { stats: PuzzleStat[]; onRestart: () => void }) {
+  const sum = totals(stats)
+  const rank = detectiveRank(sum)
   return (
     <div className="screen ending-screen">
       <div className="title-emoji">🎉</div>
@@ -65,7 +64,18 @@ export function EndingScreen({
           観念した佐伯は、塔の大時計の振り子の中から「星の涙」を取り出した。館の時計の手入れを任されていた彼は、時計に細工がされていることにまでは気づかなかったのだ。
         </p>
       </div>
-      <p className="score">使ったヒント：{hintsTotal} 回</p>
+      <section className="result" aria-labelledby="result-title">
+        <h3 id="result-title">捜査の成績</h3>
+        <p className="rank">
+          あなたは <b>{rank.title}</b>
+        </p>
+        <p className="rank-comment">{rank.comment}</p>
+        <ScoreSummary totals={sum} />
+        <details className="result-detail">
+          <summary>謎ごとの内訳を見る</summary>
+          <ScoreTable stats={stats} />
+        </details>
+      </section>
       <button className="btn primary big" onClick={onRestart}>
         もう一度遊ぶ
       </button>
