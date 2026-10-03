@@ -1,5 +1,5 @@
-import { ROOMS, canPass } from './rooms'
-import type { Direction, Exit, Hotspot, PuzzleId, RoomId } from './types'
+import { ROOMS } from './rooms'
+import type { Direction, Exit, Hotspot, RoomId } from './types'
 
 /** 部屋1つの一辺の長さ（m） */
 export const ROOM_SIZE = 8
@@ -87,9 +87,6 @@ export interface Doorway {
   /** 壁が東西方向に伸びるなら 'x' */
   axis: 'x' | 'z'
   rooms: [RoomId, RoomId]
-  locked: boolean
-  /** 鍵が掛かっているときの説明（向こう側から開けられない扉の文言） */
-  lockedText: string
 }
 
 export interface Portal {
@@ -101,7 +98,6 @@ export interface Portal {
   /** 扉が向いている方向（部屋の内側） */
   facing: Vec2
   axis: 'x' | 'z'
-  locked: boolean
 }
 
 export function roomCenter(id: RoomId): Vec2 {
@@ -150,12 +146,12 @@ export interface World {
   walls: WallSegment[]
   doorways: Doorway[]
   portals: Portal[]
-  /** 歩けない場所（壁・閉じた扉・台座） */
+  /** 歩けない場所（壁・台座） */
   colliders: Box[]
 }
 
-/** 謎の解き具合に応じた館の形を組み立てる */
-export function buildWorld(solved: PuzzleId[]): World {
+/** 部屋の配置と出口から、館の壁・扉・当たり判定を組み立てる */
+export function buildWorld(): World {
   const walls: WallSegment[] = []
   const doorways: Doorway[] = []
   const portals: Portal[] = []
@@ -194,14 +190,11 @@ export function buildWorld(solved: PuzzleId[]): World {
 
       const d = DOOR_WIDTH / 2
       walls.push(segment(-half - t, -d), segment(d, half + t), segment(-d, d, DOOR_HEIGHT))
-      const blocking = crossing.find((e) => !canPass(e.requires, solved))
       doorways.push({
         x: center.x,
         z: center.z,
         axis: alongX ? 'x' : 'z',
         rooms: [room.id, neighbor!],
-        locked: blocking !== undefined,
-        lockedText: blocking?.lockedText ?? '',
       })
     }
 
@@ -219,7 +212,6 @@ export function buildWorld(solved: PuzzleId[]): World {
         z: p.z - v.dz * (t + 0.02),
         facing: { x: -v.dx, z: -v.dz },
         axis: v.dz !== 0 ? 'x' : 'z',
-        locked: !canPass(exit.requires, solved),
       })
     }
   }
@@ -227,13 +219,6 @@ export function buildWorld(solved: PuzzleId[]): World {
   const colliders: Box[] = walls
     .filter((w) => w.bottom === 0)
     .map(({ x, z, hx, hz }) => ({ x, z, hx, hz }))
-  for (const d of doorways.filter((d) => d.locked)) {
-    colliders.push(
-      d.axis === 'x'
-        ? { x: d.x, z: d.z, hx: DOOR_WIDTH / 2, hz: t }
-        : { x: d.x, z: d.z, hx: t, hz: DOOR_WIDTH / 2 },
-    )
-  }
   for (const room of Object.values(ROOMS)) {
     for (const h of room.hotspots) {
       const p = hotspotPosition(room.id, h)
@@ -269,7 +254,7 @@ export function portalArrival(world: World, from: RoomId, exit: Exit): { pos: Ve
   return { pos, yaw: yawFacing(back.facing) }
 }
 
-/** 扉にこの距離まで近づくと、階段を使う・鍵が掛かっていると知らせる */
+/** 階段の扉にこの距離まで近づくと、別の階へ移る */
 export const TRIGGER_DISTANCE = 0.9
 
 /**

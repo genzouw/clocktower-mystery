@@ -1,4 +1,4 @@
-import { PUZZLES } from './puzzles'
+import { PUZZLES, isUnlocked } from './puzzles'
 import type { EvidenceId, PuzzleId, RoomId } from './types'
 
 export interface GameState {
@@ -9,6 +9,8 @@ export interface GameState {
   evidence: EvidenceId[]
   /** 謎ごとに開いたヒントの数 */
   hintsUsed: Partial<Record<PuzzleId, number>>
+  /** 謎ごとに答えを間違えた回数 */
+  mistakes: Partial<Record<PuzzleId, number>>
   cleared: boolean
 }
 
@@ -19,6 +21,7 @@ export const initialState: GameState = {
   solved: [],
   evidence: ['case'],
   hintsUsed: {},
+  mistakes: {},
   cleared: false,
 }
 
@@ -28,6 +31,7 @@ export type Action =
   | { type: 'solve'; id: PuzzleId }
   | { type: 'collect'; id: EvidenceId }
   | { type: 'hint'; id: PuzzleId }
+  | { type: 'mistake'; id: PuzzleId }
   | { type: 'reset' }
 
 function addUnique<T>(list: T[], item: T): T[] {
@@ -45,6 +49,8 @@ export function reducer(state: GameState, action: Action): GameState {
         visited: addUnique(state.visited, action.to),
       }
     case 'solve': {
+      // 手がかりがそろっていない謎は解けない（画面側でも入力させない）
+      if (!isUnlocked(action.id, state.solved)) return state
       const reward = PUZZLES[action.id].reward
       return {
         ...state,
@@ -55,13 +61,17 @@ export function reducer(state: GameState, action: Action): GameState {
     }
     case 'collect':
       return { ...state, evidence: addUnique(state.evidence, action.id) }
-    case 'hint':
+    case 'hint': {
+      const used = state.hintsUsed[action.id] ?? 0
+      if (used >= PUZZLES[action.id].hints.length) return state
+      return { ...state, hintsUsed: { ...state.hintsUsed, [action.id]: used + 1 } }
+    }
+    case 'mistake':
+      // 解いた後の入力は成績に含めない
+      if (state.solved.includes(action.id)) return state
       return {
         ...state,
-        hintsUsed: {
-          ...state.hintsUsed,
-          [action.id]: (state.hintsUsed[action.id] ?? 0) + 1,
-        },
+        mistakes: { ...state.mistakes, [action.id]: (state.mistakes[action.id] ?? 0) + 1 },
       }
     case 'reset':
       return { ...initialState, started: true }
@@ -70,10 +80,19 @@ export function reducer(state: GameState, action: Action): GameState {
 
 const STORAGE_KEY = 'clocktower-mystery:v1'
 
+/** 保存データを読み込む。古い版で保存した項目の欠けたデータは初期値で補う */
+export function parseSave(raw: string | null): GameState {
+  if (!raw) return initialState
+  try {
+    return { ...initialState, ...(JSON.parse(raw) as Partial<GameState>) }
+  } catch {
+    return initialState
+  }
+}
+
 export function loadState(): GameState {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    return raw ? { ...initialState, ...(JSON.parse(raw) as Partial<GameState>) } : initialState
+    return parseSave(localStorage.getItem(STORAGE_KEY))
   } catch {
     return initialState
   }

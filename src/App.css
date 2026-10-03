@@ -324,8 +324,7 @@
   font-size: 0.85rem;
   margin-bottom: 4px;
 }
-.evidence-list,
-.puzzle-list {
+.evidence-list {
   list-style: none;
   padding: 0;
   margin: 0;
@@ -340,13 +339,6 @@
 .evidence-list p {
   font-size: 0.88rem;
   margin: 4px 0 0;
-}
-.puzzle-list li {
-  color: var(--muted);
-  font-size: 0.9rem;
-}
-.puzzle-list li.done {
-  color: var(--ok);
 }
 
 /* 見取り図 */
@@ -538,6 +530,175 @@
 .explain p {
   font-size: 0.9rem;
 }
-.score {
+
+/* ---------- 成績（ヒント・誤答） ---------- */
+.puzzle-stats {
+  display: flex;
+  gap: 12px;
+  margin: -6px 0 12px;
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+.puzzle-stats .has-mistakes {
+  color: var(--danger);
+}
+
+.score-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+.score-tile {
+  background: var(--panel-2);
+  border-radius: 12px;
+  padding: 10px 6px;
+  text-align: center;
+  display: grid;
+  gap: 2px;
+}
+.score-label {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.score-tile b {
+  font-size: 1.5rem;
   color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+.score-tile small {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-left: 2px;
+}
+
+.score-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+.score-table th,
+.score-table td {
+  padding: 7px 4px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  font-weight: normal;
+}
+.score-table thead th {
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+.score-table .num {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  width: 4.5em;
+}
+.score-table .status {
+  display: inline-block;
+  width: 1.2em;
+  color: var(--ok);
+}
+.score-table .puzzle-number {
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-right: 6px;
+}
+.score-table tr.pending .puzzle-name,
+.score-table tr.pending .status {
+  color: var(--muted);
+}
+.score-table td.used {
+  color: var(--accent);
+}
+
+.result {
+  margin-top: 16px;
+  width: 100%;
+  background: var(--panel);
+  border-radius: 14px;
+  padding: 16px;
+  text-align: left;
+}
+.rank {
+  text-align: center;
+  font-size: 1rem;
+  margin-bottom: 2px;
+}
+.rank b {
+  font-size: 1.6rem;
+  color: var(--accent);
+  margin-left: 4px;
+}
+.rank-comment {
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+.result-detail summary {
+  cursor: pointer;
+  color: var(--accent);
+  font-size: 0.9rem;
+  padding: 8px 0;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+/* ---------- 手がかりと、答えられない謎 ---------- */
+.clues {
+  margin: 12px 0;
+}
+.clues h3 {
+  margin: 0 0 6px;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.clues ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 6px;
+}
+.clue {
+  padding: 8px 10px;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.clue.found {
+  background: rgba(124, 196, 154, 0.12);
+  border-left: 3px solid var(--ok);
+}
+.clue.missing {
+  border: 1px dashed var(--line);
+  color: var(--muted);
+}
+.locked-box {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+.locked-title {
+  font-weight: bold;
+  color: var(--accent);
+  margin-bottom: 4px;
+}
+.locked-box ul {
+  margin: 4px 0 0;
+  padding-left: 1.2em;
+  font-size: 0.9rem;
+}
+.legend {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 6px;
+}
+.toast {
+  white-space: pre-line;
+  border-radius: 16px;
+  text-align: center;
 }

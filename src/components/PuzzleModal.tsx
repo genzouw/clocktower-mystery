@@ -1,28 +1,45 @@
 import { useState } from 'react'
 import { isCorrect } from '../game/answer'
-import type { Puzzle } from '../game/types'
+import { PUZZLES, prerequisites } from '../game/puzzles'
+import type { Puzzle, PuzzleId } from '../game/types'
 import { Figure } from './Figure'
 
 interface Props {
   puzzle: Puzzle
-  solved: boolean
+  /** これまでに解いた謎（手がかりがそろっているかの判定に使う） */
+  solvedIds: PuzzleId[]
   hintsUsed: number
+  mistakes: number
   onSolve: () => void
   onHint: () => void
+  onMistake: () => void
   onClose: () => void
 }
 
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✓']
 
-export function PuzzleModal({ puzzle, solved, hintsUsed, onSolve, onHint, onClose }: Props) {
+export function PuzzleModal({
+  puzzle,
+  solvedIds,
+  hintsUsed,
+  mistakes,
+  onSolve,
+  onHint,
+  onMistake,
+  onClose,
+}: Props) {
   const [input, setInput] = useState('')
   const [wrong, setWrong] = useState(false)
+  const solved = solvedIds.includes(puzzle.id)
+  const missing = prerequisites(puzzle.id).filter((id) => !solvedIds.includes(id))
+  const answerable = missing.length === 0
 
   const submit = (value: string) => {
     if (isCorrect(puzzle, value)) {
       setWrong(false)
       onSolve()
     } else {
+      onMistake()
       setWrong(true)
       // 同じ不正解を続けても揺れ演出が再生されるよう、少し後に解除する
       window.setTimeout(() => setWrong(false), 600)
@@ -44,12 +61,36 @@ export function PuzzleModal({ puzzle, solved, hintsUsed, onSolve, onHint, onClos
           ×
         </button>
         <h2>{puzzle.title}</h2>
+        <p className="puzzle-stats">
+          <span>
+            💡 ヒント {hintsUsed}/{puzzle.hints.length}
+          </span>
+          <span className={mistakes > 0 ? 'has-mistakes' : ''}>✕ 誤答 {mistakes} 回</span>
+        </p>
         <div className="question">
           {puzzle.question.split('\n').map((line, i) => (
             <p key={i}>{line}</p>
           ))}
         </div>
         <Figure figure={puzzle.figure} />
+        {puzzle.clues && (
+          <div className="clues">
+            <h3>手がかり</h3>
+            <ul>
+              {puzzle.clues.map((c) =>
+                solvedIds.includes(c.from) ? (
+                  <li key={c.from} className="clue found">
+                    🔎 {c.text}
+                  </li>
+                ) : (
+                  <li key={c.from} className="clue missing">
+                    ？？？ まだ見つけていない手がかり
+                  </li>
+                ),
+              )}
+            </ul>
+          </div>
+        )}
 
         {solved ? (
           <div className="solved-box">
@@ -58,6 +99,16 @@ export function PuzzleModal({ puzzle, solved, hintsUsed, onSolve, onHint, onClos
             <button className="btn primary" onClick={onClose}>
               閉じる
             </button>
+          </div>
+        ) : !answerable ? (
+          <div className="locked-box">
+            <p className="locked-title">🔒 まだ答えられない</p>
+            <p>手がかりが足りない。先に次の謎を解こう。</p>
+            <ul>
+              {missing.map((id) => (
+                <li key={id}>{PUZZLES[id].title}</li>
+              ))}
+            </ul>
           </div>
         ) : (
           <>

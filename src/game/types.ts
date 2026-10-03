@@ -18,13 +18,11 @@ export type EvidenceId =
 
 export type Direction = 'north' | 'south' | 'east' | 'west' | 'up' | 'down'
 
-/** 扉の開錠条件。指定された謎をすべて解くと通れる */
+/** 隣の部屋や別の階へ続く出口 */
 export interface Exit {
   dir: Direction
   to: RoomId
   label: string
-  requires?: PuzzleId[]
-  lockedText?: string
 }
 
 /** 部屋の中で調べられる物。x / y はシーン内の位置（%） */
@@ -60,6 +58,10 @@ interface PuzzleBase {
   /** 問題文の下に表示する図版 */
   figure?: 'staff' | 'seats' | 'books' | 'magic' | 'cipher'
   hints: string[]
+  /** 先に解いておかないと答えられない謎（手がかりの出どころは自動で含まれる） */
+  requires?: PuzzleId[]
+  /** 他の謎を解くと問題文に加わる手がかり。そろうまで、この謎は答えられない */
+  clues?: { from: PuzzleId; text: string }[]
   /** 正解後に表示する文 */
   solvedText: string
   reward?: EvidenceId

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { isCorrect, normalize } from './answer'
 import { EVIDENCE } from './evidence'
-import { PUZZLES, PUZZLE_ORDER, SUSPECTS } from './puzzles'
-import { ROOMS, canPass } from './rooms'
-import type { PuzzleId, RoomId } from './types'
+import { PUZZLES, PUZZLE_ORDER, SUSPECTS, isUnlocked, prerequisites } from './puzzles'
+import { ROOMS } from './rooms'
+import type { PuzzleId } from './types'
 
 function permutations<T>(items: T[]): T[][] {
   if (items.length <= 1) return [items]
@@ -133,31 +133,6 @@ describe('館の構造', () => {
     expect([...placed].sort()).toEqual([...PUZZLE_ORDER].sort())
   })
 
-  it('謎を順に解けばすべての部屋へ到達でき、詰まらない', () => {
-    const solved: PuzzleId[] = []
-    for (let step = 0; step < PUZZLE_ORDER.length; step++) {
-      const reachable = new Set<RoomId>(['hall'])
-      const queue: RoomId[] = ['hall']
-      while (queue.length) {
-        const room = ROOMS[queue.shift()!]
-        for (const exit of room.exits) {
-          if (canPass(exit.requires, solved) && !reachable.has(exit.to)) {
-            reachable.add(exit.to)
-            queue.push(exit.to)
-          }
-        }
-      }
-      const available = Object.values(ROOMS)
-        .filter((r) => reachable.has(r.id))
-        .flatMap((r) =>
-          r.hotspots.flatMap((h) => (h.puzzle && !solved.includes(h.puzzle) ? [h.puzzle] : [])),
-        )
-      expect(available.length).toBeGreaterThan(0)
-      solved.push(available[0])
-    }
-    expect(solved).toHaveLength(10)
-  })
-
   it('最後の謎の前に、推理に必要な証拠がすべて手に入る', () => {
     const fromHotspots = Object.values(ROOMS).flatMap((r) =>
       r.hotspots.flatMap((h) => (h.evidence ? [h.evidence] : [])),
@@ -167,5 +142,50 @@ describe('館の構造', () => {
     )
     const obtainable = new Set(['case', ...fromHotspots, ...fromPuzzles])
     expect([...obtainable].sort()).toEqual(Object.keys(EVIDENCE).sort())
+  })
+})
+
+describe('謎の依存関係', () => {
+  const others = PUZZLE_ORDER.filter((id) => id !== 'p10')
+
+  it('最初から挑める謎が複数あり、手がかり待ちの謎もある', () => {
+    const open = PUZZLE_ORDER.filter((id) => isUnlocked(id, []))
+    expect(open.length).toBeGreaterThanOrEqual(4)
+    expect(open.length).toBeLessThan(PUZZLE_ORDER.length)
+  })
+
+  it('依存関係が循環しておらず、解ける謎から順に解けば全部解ける', () => {
+    const solved: PuzzleId[] = []
+    while (solved.length < PUZZLE_ORDER.length) {
+      const next = PUZZLE_ORDER.filter((id) => !solved.includes(id) && isUnlocked(id, solved))
+      expect(next.length, `詰まった: 解決済み ${solved.join(',')}`).toBeGreaterThan(0)
+      solved.push(...next)
+    }
+  })
+
+  it('最後の謎は、ほかの9問をすべて解くまで答えられない', () => {
+    expect(isUnlocked('p10', others)).toBe(true)
+    for (const skip of others) {
+      expect(
+        isUnlocked(
+          'p10',
+          others.filter((id) => id !== skip),
+        ),
+        skip,
+      ).toBe(false)
+    }
+  })
+
+  it('最後の謎以外は、最後の謎に依存しない', () => {
+    for (const id of others) expect(prerequisites(id)).not.toContain('p10')
+  })
+
+  it('手がかりは、出どころの謎を解くまで問題文に書かれていない', () => {
+    for (const id of PUZZLE_ORDER) {
+      for (const clue of PUZZLES[id].clues ?? []) {
+        expect(PUZZLES[id].question).not.toContain(clue.text)
+        expect(PUZZLE_ORDER).toContain(clue.from)
+      }
+    }
   })
 })

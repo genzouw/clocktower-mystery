@@ -1,7 +1,8 @@
 import { EVIDENCE } from '../game/evidence'
-import { PUZZLE_ORDER, PUZZLES } from '../game/puzzles'
+import { totals, type PuzzleStat } from '../game/score'
 import { ROOMS } from '../game/rooms'
-import type { EvidenceId, PuzzleId, RoomId } from '../game/types'
+import type { EvidenceId, RoomId } from '../game/types'
+import { ScoreSummary, ScoreTable } from './ScoreTable'
 
 interface ModalProps {
   title: string
@@ -25,30 +26,25 @@ export function Modal({ title, onClose, children }: ModalProps) {
 
 export function Notebook({
   evidence,
-  solved,
+  stats,
   onClose,
 }: {
   evidence: EvidenceId[]
-  solved: PuzzleId[]
+  stats: PuzzleStat[]
   onClose: () => void
 }) {
   return (
     <Modal title="探偵手帳" onClose={onClose}>
+      <h3>捜査の記録</h3>
+      <ScoreSummary totals={totals(stats)} />
+      <ScoreTable stats={stats} />
+      <p className="legend">✔ 解決済み　・ 挑戦できる　🔒 手がかり不足</p>
       <h3>証拠（{evidence.length}）</h3>
       <ul className="evidence-list">
         {evidence.map((id) => (
           <li key={id}>
             <b>{EVIDENCE[id].title}</b>
             <p>{EVIDENCE[id].text}</p>
-          </li>
-        ))}
-      </ul>
-      <h3>謎（{solved.length}/10）</h3>
-      <ul className="puzzle-list">
-        {PUZZLE_ORDER.map((id) => (
-          <li key={id} className={solved.includes(id) ? 'done' : ''}>
-            {solved.includes(id) ? '✔ ' : '・'}
-            {PUZZLES[id].title}
           </li>
         ))}
       </ul>
