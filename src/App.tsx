@@ -1,14 +1,16 @@
-import { useEffect, useReducer, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useReducer, useState } from 'react'
 import './App.css'
 import { EVIDENCE } from './game/evidence'
 import { PUZZLES } from './game/puzzles'
-import { ROOMS, canPass } from './game/rooms'
+import { ROOMS } from './game/rooms'
 import { loadState, reducer, saveState } from './game/state'
-import type { Direction, EvidenceId, Exit, Hotspot, PuzzleId } from './game/types'
+import type { EvidenceId, Hotspot, PuzzleId, RoomId } from './game/types'
 import { MapView, Modal, Notebook } from './components/Panels'
 import { PuzzleModal } from './components/PuzzleModal'
-import { RoomScene } from './components/RoomScene'
 import { EndingScreen, TitleScreen } from './components/Screens'
+
+// three.js は大きいので、タイトル画面を先に表示できるよう 3D 部分は後から読み込む
+const World3D = lazy(() => import('./three/World3D').then((m) => ({ default: m.World3D })))
 
 type Overlay =
   | { kind: 'puzzle'; id: PuzzleId }
@@ -21,8 +23,8 @@ type Overlay =
 export default function App() {
   const [state, dispatch] = useReducer(reducer, undefined, loadState)
   const [overlay, setOverlay] = useState<Overlay>(null)
-  const [enteredFrom, setEnteredFrom] = useState<Direction | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [showGuide, setShowGuide] = useState(true)
 
   useEffect(() => saveState(state), [state])
 
@@ -31,6 +33,24 @@ export default function App() {
     const t = window.setTimeout(() => setToast(null), 2500)
     return () => window.clearTimeout(t)
   }, [toast])
+
+  const handleRoomChange = useCallback((to: RoomId) => dispatch({ type: 'move', to }), [])
+
+  const handleHotspot = (_room: RoomId, h: Hotspot) => {
+    if (h.puzzle) {
+      setOverlay({ kind: 'puzzle', id: h.puzzle })
+      return
+    }
+    const isNew = h.evidence !== undefined && !state.evidence.includes(h.evidence)
+    if (h.evidence) dispatch({ type: 'collect', id: h.evidence })
+    setOverlay({ kind: 'look', hotspot: h, newEvidence: isNew ? h.evidence! : null })
+  }
+
+  const handleSolve = (id: PuzzleId) => {
+    dispatch({ type: 'solve', id })
+    const reward = PUZZLES[id].reward
+    setToast(reward ? `手帳に「${EVIDENCE[reward].title}」を記録した` : '謎を解いた！')
+  }
 
   const hasProgress = state.solved.length > 0 || state.visited.length > 1
 
@@ -51,37 +71,21 @@ export default function App() {
 
   const room = ROOMS[state.room]
 
-  const handleExit = (exit: Exit) => {
-    if (!canPass(exit.requires, state.solved)) {
-      setOverlay({ kind: 'locked', text: exit.lockedText ?? '扉は開かない。' })
-      return
-    }
-    setEnteredFrom(exit.dir)
-    dispatch({ type: 'move', to: exit.to })
-  }
-
-  const handleHotspot = (h: Hotspot) => {
-    if (h.puzzle) {
-      setOverlay({ kind: 'puzzle', id: h.puzzle })
-      return
-    }
-    const isNew = h.evidence !== undefined && !state.evidence.includes(h.evidence)
-    if (h.evidence) dispatch({ type: 'collect', id: h.evidence })
-    setOverlay({
-      kind: 'look',
-      hotspot: h,
-      newEvidence: isNew ? h.evidence! : null,
-    })
-  }
-
-  const handleSolve = (id: PuzzleId) => {
-    dispatch({ type: 'solve', id })
-    const reward = PUZZLES[id].reward
-    setToast(reward ? `手帳に「${EVIDENCE[reward].title}」を記録した` : '謎を解いた！')
-  }
-
   return (
     <div className="app">
+      <Suspense fallback={<div className="loading">館の扉を開いています…</div>}>
+        <World3D
+          room={state.room}
+          solved={state.solved}
+          paused={overlay !== null}
+          onRoomChange={handleRoomChange}
+          onHotspot={handleHotspot}
+          onLocked={(text) => setOverlay({ kind: 'locked', text: text || '扉は開かない。' })}
+          onToast={setToast}
+          onFirstMove={() => setShowGuide(false)}
+        />
+      </Suspense>
+
       <header className="topbar">
         <div className="room-title">
           <small>{room.floor}</small> {room.name}
@@ -91,13 +95,13 @@ export default function App() {
         </div>
       </header>
 
-      <RoomScene
-        room={room}
-        solved={state.solved}
-        enteredFrom={enteredFrom}
-        onHotspot={handleHotspot}
-        onExit={handleExit}
-      />
+      {showGuide && (
+        <div className="guide">
+          <p>左下のスティックで歩く</p>
+          <p>画面をドラッグして見回す</p>
+          <p>近づいて物をタップして調べる</p>
+        </div>
+      )}
 
       <footer className="toolbar">
         <button className="btn tool" onClick={() => setOverlay({ kind: 'notebook' })}>

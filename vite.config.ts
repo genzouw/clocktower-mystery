@@ -5,4 +5,8 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   base: '/clocktower-mystery/',
   plugins: [react()],
+  build: {
+    // 3D 部分（three.js を含む）は遅延読み込みの 1 チャンクにまとめているため、警告の閾値を上げる
+    chunkSizeWarningLimit: 1000,
+  },
 })
