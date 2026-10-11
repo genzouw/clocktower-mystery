@@ -137,26 +137,31 @@ export function EndingScreen({
     const t = window.setTimeout(() => setRevealed(true), revealTotalMs(ending.steps.length))
     return () => window.clearTimeout(t)
   }, [ending.steps.length])
+  // 画面のタップは、キーボード操作の「全部すぐ表示」ボタンの補助。div に onClick を付けると
+  // 役割の無い要素が操作対象になる（Sonar S1082）ため、window の pointerdown で受ける。
+  // ボタン類のタップは除く（押した瞬間に再描画でボタンが消え、click とフォーカス移動が失われるため）
+  useEffect(() => {
+    if (revealed) return
+    const reveal = (e: PointerEvent) => {
+      if (e.target instanceof Element && e.target.closest('button, a, summary')) return
+      setRevealed(true)
+    }
+    window.addEventListener('pointerdown', reveal)
+    return () => window.removeEventListener('pointerdown', reveal)
+  }, [revealed])
   const skip = () => {
     setRevealed(true)
     // 押したボタンが消えるので、フォーカスを見出しへ移す
     headingRef.current?.focus()
   }
   return (
-    // 画面のタップは、キーボード操作の「全部すぐ表示」ボタンの補助
-    <div className={endingScreenClass(revealed)} onClick={() => setRevealed(true)}>
+    <div className={endingScreenClass(revealed)}>
       <div className="title-emoji">🎉</div>
       <h1 ref={headingRef} tabIndex={-1}>
         事件解決！
       </h1>
       {!revealed && (
-        <button
-          className="btn ghost ending-skip"
-          onClick={(e) => {
-            e.stopPropagation()
-            skip()
-          }}
-        >
+        <button className="btn ghost ending-skip" onClick={skip}>
           全部すぐ表示
         </button>
       )}
