@@ -1,0 +1,407 @@
+/*
+ * 謎の画面（PuzzleModal.tsx）のスタイル。枠・見出し・スクロールは Dialog.css が持つ。
+ * 色・文字・余白・動きは index.css のトークンを参照する。
+ * クラス名は pz- で始め、App.css の旧い指定（.keypad・.hint など）とは重ねない。
+ */
+
+/* ---------- ヘッダーの成績 ---------- */
+.pz-stats {
+  display: flex;
+  gap: var(--sp-3);
+  margin: var(--sp-1) 0 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}
+.pz-stats .has-mistakes {
+  color: var(--danger);
+}
+
+/* ---------- 本文の区切り ---------- */
+.pz-section {
+  margin-top: var(--sp-4);
+}
+.pz-section:first-child {
+  margin-top: var(--sp-2);
+}
+.pz-label {
+  margin: 0 0 var(--sp-2);
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+.pz-label::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.pz-note {
+  margin: var(--sp-2) 0 0;
+  font-family: var(--font-sans);
+  font-size: var(--fs-xs);
+  color: var(--muted);
+}
+
+/* 問題文は、紙面風の枠に入れる */
+.pz-paper {
+  padding: var(--sp-3h) var(--sp-4);
+  background: var(--paper);
+  color: var(--paper-ink);
+  border-radius: var(--r-sm);
+  border-left: 4px solid var(--wood);
+  box-shadow:
+    var(--shadow-paper),
+    inset 0 0 24px rgba(90, 61, 40, 0.14);
+}
+.pz-paper p {
+  margin: 0 0 var(--sp-1h);
+  letter-spacing: 0.04em;
+}
+.pz-paper p:last-child {
+  margin-bottom: 0;
+}
+
+.pz-figure {
+  padding: var(--sp-1) 0;
+}
+
+/* ---------- 手がかり ---------- */
+.pz-clues {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-1h);
+}
+.pz-clue {
+  padding: var(--sp-2) var(--sp-2h);
+  border-radius: var(--r-sm);
+  font-size: var(--fs-sm);
+  line-height: 1.7;
+}
+.pz-clue.is-found {
+  background: var(--ok-soft);
+  border-left: 3px solid var(--ok);
+}
+.pz-clue.is-missing {
+  border: 1px dashed var(--line);
+  color: var(--muted);
+}
+
+/* ---------- 答えられない謎 ---------- */
+.pz-locked {
+  padding: var(--sp-3) var(--sp-3h);
+  border-radius: var(--r-md);
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+}
+.pz-locked-title {
+  margin: 0 0 var(--sp-1);
+  font-size: var(--fs-md);
+  color: var(--accent);
+}
+.pz-locked p {
+  margin-bottom: var(--sp-1);
+}
+.pz-locked ul {
+  margin: var(--sp-1) 0 0;
+  padding-left: 1.2em;
+  font-size: var(--fs-sm);
+}
+
+/* ---------- ヒント ---------- */
+.pz-hints {
+  list-style: none;
+  margin: 0 0 var(--sp-2);
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.pz-hints li {
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--accent-soft);
+  border-left: 3px solid var(--accent);
+  border-radius: var(--r-sm);
+  scroll-margin-bottom: var(--sp-2);
+}
+.pz-hints p {
+  margin: 0;
+  font-size: var(--fs-sm);
+}
+.pz-hint-step {
+  display: block;
+  margin-bottom: var(--sp-0);
+  font-family: var(--font-sans);
+  font-size: var(--fs-xs);
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+}
+.pz-hint-button {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  background: transparent;
+  box-shadow: none;
+}
+.pz-pips {
+  font-size: var(--fs-xs);
+  letter-spacing: 0.2em;
+  color: var(--accent);
+}
+
+/* ---------- 解決したあとの結果 ---------- */
+.pz-solved {
+  margin-top: var(--sp-2);
+  padding: var(--sp-3) var(--sp-3h);
+  border-radius: var(--r-md);
+  background: var(--ok-soft);
+  border: 1px solid var(--ok);
+  display: grid;
+  gap: var(--sp-2);
+}
+.pz-solved p {
+  margin: 0;
+}
+.pz-solved-head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+.pz-solved-head h3 {
+  margin: 0;
+  font-size: var(--fs-lg);
+  color: var(--ok);
+  outline: none;
+}
+.pz-lock {
+  font-size: var(--fs-glyph);
+  line-height: 1;
+}
+.pz-record {
+  padding: var(--sp-2) var(--sp-3);
+  border-radius: var(--r-sm);
+  background: var(--panel-2);
+  font-size: var(--fs-sm);
+}
+.pz-record p {
+  margin: 0;
+}
+.pz-record-label {
+  font-family: var(--font-sans);
+  font-size: var(--fs-xs);
+  font-weight: bold;
+  letter-spacing: 0.08em;
+  color: var(--ok);
+}
+.pz-record ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: var(--sp-1h);
+}
+
+/* 正解した直後だけ、錠が開く演出と、結果の枠が光る演出を出す */
+.pz-solved.is-fresh {
+  animation: pz-glow 1.2s var(--ease);
+}
+.pz-solved.is-fresh .pz-lock {
+  animation: pz-unlock 0.7s var(--ease);
+}
+.pz-solved.is-fresh .pz-record {
+  animation: pz-rise var(--dur-slow) var(--ease) backwards;
+}
+.pz-solved.is-fresh .pz-record:nth-of-type(2) {
+  animation-delay: 0.15s;
+}
+@keyframes pz-unlock {
+  0% {
+    transform: rotate(0) scale(0.7);
+    filter: grayscale(1);
+  }
+  40% {
+    transform: rotate(-18deg) scale(1.35);
+    filter: grayscale(0);
+  }
+  70% {
+    transform: rotate(8deg) scale(1.1);
+  }
+  100% {
+    transform: rotate(0) scale(1);
+  }
+}
+@keyframes pz-glow {
+  0% {
+    box-shadow: 0 0 0 0 var(--ok);
+  }
+  40% {
+    box-shadow: 0 0 24px 4px var(--ok-soft);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+@keyframes pz-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+}
+
+/* ---------- 回答欄（画面の下部に固定される） ---------- */
+.pz-answer {
+  display: grid;
+  gap: var(--sp-2);
+}
+.pz-close {
+  width: 100%;
+}
+/* 知らせの領域は常に置き（読み上げのため）、空のときは高さを持たせない。出ると、回答欄が上へ伸びる */
+.pz-feedback {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  line-height: var(--lh-ui);
+}
+.pz-feedback:empty {
+  margin-top: calc(-1 * var(--sp-2));
+}
+.pz-wrong {
+  color: var(--danger);
+  font-weight: bold;
+  animation: fade-in var(--dur) var(--ease);
+}
+
+/* 数字錠 */
+.pz-slots {
+  display: flex;
+  justify-content: center;
+  gap: var(--sp-2h);
+  outline: none;
+}
+.pz-slot {
+  width: 44px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border: 2px solid var(--accent);
+  border-radius: var(--r-ms);
+  background: var(--bg-deep);
+  box-shadow: var(--shadow-inset);
+  font-family: var(--font-mono);
+  font-size: var(--fs-xl);
+  transition: border-color var(--dur) var(--ease);
+}
+.pz-slot.is-next {
+  border-color: var(--focus);
+  box-shadow: var(--shadow-inset), var(--accent-glow);
+}
+.pz-slots.is-wrong .pz-slot {
+  border-color: var(--danger);
+}
+.pz-keypad {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-2);
+  max-width: 300px;
+  width: 100%;
+  margin: 0 auto;
+}
+.pz-key {
+  height: var(--tap);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: linear-gradient(180deg, var(--panel-3), var(--panel-2));
+  box-shadow: var(--highlight), var(--shadow-1);
+  font-size: var(--fs-lg);
+  cursor: pointer;
+  transition:
+    transform var(--dur-fast) var(--ease),
+    background var(--dur) var(--ease),
+    box-shadow var(--dur) var(--ease);
+}
+.pz-key:active {
+  transform: scale(0.97);
+  background: var(--panel-3);
+}
+.pz-key.is-enter {
+  background: linear-gradient(180deg, var(--accent-hover), var(--accent));
+  border-color: var(--accent);
+  color: var(--accent-ink);
+  font-weight: bold;
+}
+.pz-key:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+@media (hover: hover) {
+  .pz-key:not(:disabled):hover {
+    border-color: var(--accent);
+    box-shadow: var(--highlight), var(--accent-glow);
+  }
+}
+
+/* 選択式（6 つ以上は 2 列） */
+.pz-choices {
+  display: grid;
+  gap: var(--sp-2);
+  max-height: 46dvh;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.pz-choices.is-two-column {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.pz-choice {
+  width: 100%;
+  overflow-wrap: anywhere;
+}
+
+/* 文字入力 */
+.pz-text {
+  display: flex;
+  gap: var(--sp-2);
+}
+.pz-text input {
+  flex: 1;
+  min-width: 0;
+  min-height: var(--tap-comfy);
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--bg-deep);
+  box-shadow: var(--shadow-inset);
+  padding: 0 var(--sp-3);
+  font-size: 16px; /* iOS のズーム防止（これより小さくしない） */
+}
+.pz-text.is-wrong input {
+  border-color: var(--danger);
+}
+
+/* 縦が短い画面では、回答欄を詰めて問題文の領域を残す */
+@media (max-height: 700px) {
+  .pz-slot {
+    height: 44px;
+  }
+  .pz-key {
+    height: 40px;
+  }
+}
+
+/* 動きを減らす設定では、揺れ・光らせる演出を出さず、色と枠で伝える（継続時間は index.css が 0 にする） */
+@media (prefers-reduced-motion: reduce) {
+  .pz-solved.is-fresh,
+  .pz-solved.is-fresh .pz-lock,
+  .pz-solved.is-fresh .pz-record {
+    animation: none;
+  }
+}
