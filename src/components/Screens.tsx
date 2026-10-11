@@ -1,8 +1,46 @@
-import { Fragment, useState } from 'react'
+import { Fragment, useEffect, useRef, useState, type CSSProperties } from 'react'
 import { detectiveRank, totals, type PuzzleStat } from '../game/score'
 import type { Scenario } from '../game/types'
+import { endingScreenClass, revealOrder, revealTotalMs } from './endingReveal'
+import { markerHowto, nextConfirming } from './hud'
 import { ScoreSummary, ScoreTable } from './ScoreTable'
 import './Screens.css'
+import './Title.css'
+import './Ending.css'
+
+/** どのシナリオでも共通の、3D の操作の説明 */
+const CONTROLS = [
+  '左下のスティック（キーボードなら W・A・S・D）で歩く',
+  '画面をドラッグ（キーボードなら ← →）で見回す',
+  '近づいた物をタップして調べる。扉に近づくと隣の部屋へ進む',
+]
+
+/** 進行を消す操作の前に挟む確認（タイトルの「はじめから」とエンディングの「もう一度遊ぶ」で共用） */
+function ResetConfirm({
+  label,
+  message,
+  confirmLabel,
+  onConfirm,
+  onCancel,
+}: {
+  label: string
+  message: string
+  confirmLabel: string
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  return (
+    <div className="reset-confirm" role="alertdialog" aria-label={label}>
+      <p>{message}</p>
+      <button className="btn danger" onClick={onConfirm}>
+        {confirmLabel}
+      </button>
+      <button className="btn ghost" onClick={onCancel}>
+        やめる
+      </button>
+    </div>
+  )
+}
 
 export function TitleScreen({
   scenario,
@@ -42,20 +80,21 @@ export function TitleScreen({
         {hasProgress ? 'つづきから' : '館に入る'}
       </button>
       {hasProgress && !confirmingReset && (
-        <button className="btn ghost" onClick={() => setConfirmingReset(true)}>
+        <button
+          className="btn ghost"
+          onClick={() => setConfirmingReset((c) => nextConfirming(c, 'ask'))}
+        >
           はじめから
         </button>
       )}
       {confirmingReset && (
-        <div className="reset-confirm" role="alertdialog" aria-label="はじめからの確認">
-          <p>この事件の進行を消して、最初から始めます。よろしいですか？</p>
-          <button className="btn danger" onClick={onReset}>
-            進行を消して始める
-          </button>
-          <button className="btn ghost" onClick={() => setConfirmingReset(false)}>
-            やめる
-          </button>
-        </div>
+        <ResetConfirm
+          label="はじめからの確認"
+          message="この事件の進行を消して、最初から始めます。よろしいですか？"
+          confirmLabel="進行を消して始める"
+          onConfirm={onReset}
+          onCancel={() => setConfirmingReset((c) => nextConfirming(c, 'cancel'))}
+        />
       )}
       <button className="btn ghost" onClick={onBack}>
         事件ファイルへ戻る
@@ -63,7 +102,7 @@ export function TitleScreen({
       <div className="howto">
         <h3>遊び方</h3>
         <ul>
-          {scenario.howto.map((item) => (
+          {[...CONTROLS, markerHowto(scenario), ...scenario.howto].map((item) => (
             <li key={item}>{item}</li>
           ))}
         </ul>
@@ -87,21 +126,64 @@ export function EndingScreen({
   const sum = totals(stats)
   const rank = detectiveRank(scenario, sum)
   const { ending } = scenario
+  const [confirmingRestart, setConfirmingRestart] = useState(false)
+  // 結末 → 推理のまとめ（1 項目ずつ）→ 後日談 → 成績 の順に、--i の順番で現れる。ボタン群は最初から見える。
+  // 動きを減らす設定では Ending.css が一度に表示する。「全部すぐ表示」か画面のタップで、途中でも全表示にできる
+  const step = (i: number) => ({ '--i': i }) as CSSProperties
+  const order = revealOrder(ending.steps.length)
+  const [revealed, setRevealed] = useState(false)
+  const headingRef = useRef<HTMLHeadingElement>(null)
+  useEffect(() => {
+    const t = window.setTimeout(() => setRevealed(true), revealTotalMs(ending.steps.length))
+    return () => window.clearTimeout(t)
+  }, [ending.steps.length])
+  // 画面のタップは、キーボード操作の「全部すぐ表示」ボタンの補助。div に onClick を付けると
+  // 役割の無い要素が操作対象になる（Sonar S1082）ため、window の pointerdown で受ける。
+  // ボタン類のタップは除く（押した瞬間に再描画でボタンが消え、click とフォーカス移動が失われるため）
+  useEffect(() => {
+    if (revealed) return
+    const reveal = (e: PointerEvent) => {
+      if (e.target instanceof Element && e.target.closest('button, a, summary')) return
+      setRevealed(true)
+    }
+    window.addEventListener('pointerdown', reveal)
+    return () => window.removeEventListener('pointerdown', reveal)
+  }, [revealed])
+  const skip = () => {
+    setRevealed(true)
+    // 押したボタンが消えるので、フォーカスを見出しへ移す
+    headingRef.current?.focus()
+  }
   return (
-    <div className="screen ending-screen">
+    <div className={endingScreenClass(revealed)}>
       <div className="title-emoji">🎉</div>
-      <h1>事件解決！</h1>
-      <p className="lead">犯人は {ending.culprit} だった。</p>
+      <h1 ref={headingRef} tabIndex={-1}>
+        事件解決！
+      </h1>
+      {!revealed && (
+        <button className="btn ghost ending-skip" onClick={skip}>
+          全部すぐ表示
+        </button>
+      )}
+      <p className="lead reveal" style={step(order.lead)}>
+        犯人は {ending.culprit} だった。
+      </p>
       <div className="explain">
-        <h3>推理のまとめ</h3>
+        <h3 className="reveal" style={step(order.heading)}>
+          推理のまとめ
+        </h3>
         <ol>
-          {ending.steps.map((step) => (
-            <li key={step}>{step}</li>
+          {ending.steps.map((text, n) => (
+            <li key={text} className="reveal" style={step(order.step(n))}>
+              {text}
+            </li>
           ))}
         </ol>
-        <p>{ending.epilogue}</p>
+        <p className="reveal" style={step(order.epilogue)}>
+          {ending.epilogue}
+        </p>
       </div>
-      <section className="result" aria-labelledby="result-title">
+      <section className="result reveal" style={step(order.result)} aria-labelledby="result-title">
         <h3 id="result-title">捜査の成績</h3>
         <p className="rank">
           あなたは <b>{rank.title}</b>
@@ -113,12 +195,28 @@ export function EndingScreen({
           <ScoreTable stats={stats} />
         </details>
       </section>
-      <button className="btn primary big" onClick={onRestart}>
-        もう一度遊ぶ
-      </button>
-      <button className="btn ghost" onClick={onBack}>
-        事件ファイルへ戻る
-      </button>
+      <div className="ending-actions">
+        {!confirmingRestart && (
+          <button
+            className="btn primary big"
+            onClick={() => setConfirmingRestart((c) => nextConfirming(c, 'ask'))}
+          >
+            もう一度遊ぶ
+          </button>
+        )}
+        {confirmingRestart && (
+          <ResetConfirm
+            label="もう一度遊ぶ前の確認"
+            message="この事件の進行と成績を消して、最初から遊びます。よろしいですか？"
+            confirmLabel="進行を消して遊ぶ"
+            onConfirm={onRestart}
+            onCancel={() => setConfirmingRestart((c) => nextConfirming(c, 'cancel'))}
+          />
+        )}
+        <button className="btn ghost" onClick={onBack}>
+          事件ファイルへ戻る
+        </button>
+      </div>
     </div>
   )
 }
