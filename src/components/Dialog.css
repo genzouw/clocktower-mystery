@@ -1,0 +1,80 @@
+/*
+ * ダイアログの共通部品（Dialog.tsx）のスタイル。
+ * 色・文字・余白・動きは index.css のトークンを参照する。
+ * 本文だけがスクロールし、見出しと footer は画面に残る。
+ */
+
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: var(--scrim);
+  animation: fade-in var(--dur) var(--ease);
+}
+
+.dialog {
+  position: relative;
+  width: 100%;
+  max-width: 480px;
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+  background: linear-gradient(180deg, var(--panel-top), var(--panel) 120px);
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  box-shadow: var(--shadow-3), var(--highlight);
+  animation: slide-up var(--dur) var(--ease);
+}
+
+.dialog-header {
+  position: relative;
+  flex: none;
+  padding: var(--sp-4) var(--sp-4) var(--sp-2);
+}
+
+.dialog-title {
+  margin: 0;
+  padding-right: calc(var(--tap) + var(--sp-2));
+  font-size: var(--fs-lg);
+  color: var(--accent);
+  /* 見出しへのフォーカスは読み上げのためで、押せる部品ではないので輪を出さない */
+  outline: none;
+}
+
+.dialog-close {
+  position: absolute;
+  right: var(--sp-2);
+  top: var(--sp-2);
+  width: var(--tap);
+  height: var(--tap);
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: var(--r-pill);
+  background: none;
+  font-size: var(--fs-xl);
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--dur) var(--ease);
+}
+.dialog-close:active {
+  background: var(--accent-soft);
+}
+
+.dialog-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--sp-2) var(--sp-4) var(--sp-4);
+}
+
+.dialog-footer {
+  flex: none;
+  padding: var(--sp-3) var(--sp-4) calc(var(--sp-3) + env(safe-area-inset-bottom));
+  background: var(--panel);
+  border-top: 1px solid var(--line);
+  box-shadow: var(--shadow-3);
+}
