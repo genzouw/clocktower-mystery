@@ -1,5 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useReducer, useState } from 'react'
 import './App.css'
+import './Hud.css'
+import './Focus.css'
 import { solveToast, tapOutcome } from './game/hotspot'
 import { SCENARIOS } from './game/scenarios'
 import { puzzleStats } from './game/score'
@@ -18,6 +20,7 @@ import { MapView, Modal, Notebook } from './components/Panels'
 import { PuzzleModal } from './components/PuzzleModal'
 import { ScenarioSelect } from './components/ScenarioSelect'
 import { EndingScreen, TitleScreen } from './components/Screens'
+import { GUIDE_AUTO_CLOSE_MS, guideVisibleAfter } from './components/hud'
 
 // three.js は大きいので、タイトル画面を先に表示できるよう 3D 部分は後から読み込む
 const World3D = lazy(() => import('./three/World3D').then((m) => ({ default: m.World3D })))
@@ -75,6 +78,16 @@ function Game({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) 
   const [onTitle, setOnTitle] = useState(true)
 
   useEffect(() => saveState(scenario, state), [scenario, state])
+
+  // 操作ガイドは最初に動くか、しばらくすると消える。「操作」ボタンで再表示できる
+  useEffect(() => {
+    if (!showGuide) return
+    const t = window.setTimeout(
+      () => setShowGuide(guideVisibleAfter('timeout')),
+      GUIDE_AUTO_CLOSE_MS,
+    )
+    return () => window.clearTimeout(t)
+  }, [showGuide])
 
   useEffect(() => {
     if (!toast) return
@@ -145,7 +158,7 @@ function Game({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) 
           onRoomChange={handleRoomChange}
           onHotspot={handleHotspot}
           onToast={setToast}
-          onFirstMove={() => setShowGuide(false)}
+          onFirstMove={() => setShowGuide(guideVisibleAfter('first-move'))}
         />
       </Suspense>
 
@@ -153,18 +166,25 @@ function Game({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) 
         <div className="room-title">
           <small>{room.floor}</small> {room.name}
         </div>
-        <div className="progress" aria-label={`解いた謎 ${state.solved.length} / ${puzzleCount}`}>
-          🔑 {state.solved.length}/{puzzleCount}
+        <div
+          className="progress"
+          role="img"
+          aria-label={`解いた謎 ${state.solved.length} / ${puzzleCount}`}
+        >
+          <span aria-hidden="true">
+            🔑 {state.solved.length}
+            <span className="progress-total">/{puzzleCount}</span>
+          </span>
         </div>
+        {showGuide && (
+          <button className="guide" onClick={() => setShowGuide(guideVisibleAfter('tap'))}>
+            <span>左下のスティックで歩く</span>
+            <span>画面をドラッグして見回す</span>
+            <span>近づいて物をタップして調べる</span>
+            <small>タップで閉じる</small>
+          </button>
+        )}
       </header>
-
-      {showGuide && (
-        <div className="guide">
-          <p>左下のスティックで歩く</p>
-          <p>画面をドラッグして見回す</p>
-          <p>近づいて物をタップして調べる</p>
-        </div>
-      )}
 
       <footer className="toolbar">
         <button className="btn tool" onClick={() => setOverlay({ kind: 'notebook' })}>
@@ -172,6 +192,9 @@ function Game({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) 
         </button>
         <button className="btn tool" onClick={() => setOverlay({ kind: 'map' })}>
           🗺️ 見取り図
+        </button>
+        <button className="btn tool" onClick={() => setShowGuide(guideVisibleAfter('show'))}>
+          🧭 操作
         </button>
         <button className="btn tool" onClick={onExit}>
           📁 メニュー

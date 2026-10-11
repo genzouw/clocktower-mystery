@@ -12,5 +12,6 @@
 .btn.danger {
   background: var(--danger);
   border-color: var(--danger);
-  color: #fff;
+  /* 白（#fff）は --danger との対比が約 2.7:1 で足りないため、濃い文字色にする（約 7:1） */
+  color: #1f0a06;
 }
