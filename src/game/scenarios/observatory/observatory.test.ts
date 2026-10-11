@@ -13,6 +13,15 @@ const rooms = Object.values(observatory.rooms)
 const hotspots = rooms.flatMap((r) => r.hotspots.map((h) => ({ room: r.id, h })))
 const findHotspot = (puzzle: PuzzleId) => hotspots.find(({ h }) => h.puzzle === puzzle)!
 
+/** 問題文調の語。物の説明文に書くと、謎のある物が見分けられてしまう（謎の中身は謎の画面で出す） */
+const PUZZLE_WORDS = /錠|札|走り書き|桁|数字|暗証|刻ま|暗号|意味の通らない|手がかり|手掛かり/
+
+const stats = (xs: number[]) => {
+  const mean = xs.reduce((a, b) => a + b, 0) / xs.length
+  const sd = Math.sqrt(xs.reduce((a, b) => a + (b - mean) ** 2, 0) / xs.length)
+  return { mean, sd, min: Math.min(...xs), max: Math.max(...xs) }
+}
+
 /** 出口をたどって、開始の部屋から行ける部屋（鍵のかかった扉は無い） */
 function reachableRooms(): Set<RoomId> {
   const seen = new Set<RoomId>([observatory.startRoom])
@@ -114,9 +123,11 @@ describe('シナリオ 2 — 伏せる謎（concealed）', () => {
     })
   })
 
-  it('解く前の説明文は、謎の存在を書かず、「不自然」「今はすべて入っている」だけを示す', () => {
-    expect(findHotspot('q6').h.text).toContain('どこか不自然だ')
-    expect(findHotspot('q9').h.text).toContain('今はすべて入っている')
+  it('解く前の説明文は、謎の存在も解き方も書かず、ほかの物と同じ雰囲気文にする', () => {
+    for (const { h } of concealed) {
+      expect(h.text, h.id).not.toMatch(PUZZLE_WORDS)
+      expect(h.text, h.id).not.toMatch(/不自然|謎|仕掛け|怪しい/)
+    }
   })
 
   it('どの状態でも、輪も【謎】の名札も出さず、未開の謎の題名は伏せる', () => {
@@ -247,6 +258,84 @@ describe('シナリオ 2 — 答えの漏えいと q9 の明暗', () => {
   it('導入文・遊び方に、輪や【謎】の名札を前提にした書き方がない', () => {
     const all = [...observatory.lead, ...observatory.howto].join('')
     expect(all).not.toMatch(/光る|輪|【謎】|金色/)
+  })
+})
+
+describe('シナリオ 2 — 物の説明文で、謎のある物を見分けられない', () => {
+  const withPuzzle = hotspots.filter(({ h }) => h.puzzle).map(({ h }) => h)
+  const plain = hotspots.filter(({ h }) => !h.puzzle).map(({ h }) => h)
+  const len = (h: Hotspot) => [...h.text].length
+
+  it('謎のある物と無い物の説明文の長さが、同じ分布になる（平均・ばらつき・最短・最長）', () => {
+    const a = stats(withPuzzle.map(len))
+    const b = stats(plain.map(len))
+    expect(withPuzzle).toHaveLength(12)
+    expect(plain).toHaveLength(23)
+    expect(Math.abs(a.mean - b.mean), '平均').toBeLessThanOrEqual(5)
+    expect(Math.abs(a.sd - b.sd), '標準偏差').toBeLessThanOrEqual(5)
+    expect(Math.abs(a.min - b.min), '最短').toBeLessThanOrEqual(5)
+    expect(Math.abs(a.max - b.max), '最長').toBeLessThanOrEqual(10)
+    // 謎のある物の範囲は、謎の無い物の範囲に収まる
+    expect(a.min).toBeGreaterThanOrEqual(b.min)
+    expect(a.max).toBeLessThanOrEqual(b.max)
+  })
+
+  it('問題文調の語（錠・札・走り書きなど）が、どの物の説明文にも出ない', () => {
+    // 謎のある物だけに偏らない、の最も強い形（どちらにも出さない）。謎の中身は謎の画面で出す
+    for (const { h } of hotspots) expect(h.text, h.id).not.toMatch(PUZZLE_WORDS)
+  })
+
+  it('謎のある物の説明文に、謎の解き方や答えを書かない', () => {
+    const answers = ['2340', '2076', '3241', '840', '4538', '2番と4番', '氷室', '真鍮']
+    for (const h of withPuzzle) expect(h.text, h.id).not.toMatch(/\d/)
+    // 答えの語は、どの物の説明文にも出ない（氷室は、来客名簿の 6 人の列挙にだけ出る）
+    for (const { h } of hotspots) {
+      for (const word of answers) {
+        if (word === '氷室' && h.id === 'entrance-register') continue
+        expect(h.text, `${h.id}: ${word}`).not.toContain(word)
+      }
+    }
+  })
+})
+
+describe('シナリオ 2 — q2 の居場所の一覧と解の一意性', () => {
+  // 問題文の居場所の一覧から総当たりする。solve.ts とは別に、証言を書き下して確かめる
+  const places = observatory.puzzles.q2.question.match(/6人は、(.+?)のどこかにいた/)![1].split('・')
+  const people = ['氷室', '早瀬', '雪村', '鳴海', '真壁', '灯']
+
+  it('居場所の一覧に、氷室が扉を開けたドームが含まれる', () => {
+    expect(places).toContain('ドーム')
+    expect(observatory.evidence.domelog.text).toContain('扉が開けられていた')
+    expect(places).toHaveLength(7)
+  })
+
+  it('6 人の居場所の全組（7^6 通り）を調べても、嘘をついている者は真壁だけ', () => {
+    const liars = new Set<string>()
+    let consistent = 0
+    const total = places.length ** people.length
+    for (let n = 0; n < total; n++) {
+      const at: Record<string, string> = {}
+      let rest = n
+      for (const p of people) {
+        at[p] = places[rest % places.length]
+        rest = Math.floor(rest / places.length)
+      }
+      const truths: [string, boolean][] = [
+        ['早瀬', at['早瀬'] === '談話室' && at['雪村'] === '談話室'],
+        ['雪村', at['雪村'] === '談話室' && at['早瀬'] === '談話室'],
+        ['鳴海', at['鳴海'] === '暗室' && at['真壁'] === '暗室'],
+        ['真壁', at['真壁'] === '客室' && people.filter((p) => at[p] === '客室').length === 1],
+        ['灯', at['灯'] === '廊下' && at['真壁'] === '暗室'],
+      ]
+      const lies = truths.filter(([, ok]) => !ok)
+      if (lies.length === 1) {
+        consistent++
+        liars.add(lies[0][0])
+      }
+    }
+    expect(consistent).toBeGreaterThan(0)
+    expect([...liars]).toEqual(['真壁'])
+    expect(observatory.puzzles.q2).toMatchObject({ answer: '真壁' })
   })
 })
 
