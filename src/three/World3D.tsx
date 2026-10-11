@@ -1,7 +1,15 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'
 import { AdditiveBlending, Vector3 } from 'three'
-import type { Group, Mesh, MeshBasicMaterial, PointLight, Sprite, SpriteMaterial } from 'three'
+import type {
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  PerspectiveCamera,
+  PointLight,
+  Sprite,
+  SpriteMaterial,
+} from 'three'
 import { hotspotAppearance, type HotspotAppearance } from '../game/hotspot'
 import type { Hotspot, PuzzleId, RoomId, Scenario } from '../game/types'
 import {
@@ -20,7 +28,13 @@ import {
 } from '../game/world'
 import { Joystick } from './Joystick'
 import { PlayerRig } from './playerRig'
-import { labelDistanceScale, labelPixelRatio, reachEmphasis } from './labelStyle'
+import {
+  LABEL_EMPHASIS_MAX_SCALE,
+  labelDistanceScale,
+  labelMaxScale,
+  labelPixelRatio,
+  reachEmphasis,
+} from './labelStyle'
 import { emojiTexture, glowTexture, labelTexture } from './textures'
 
 /** 名札の距離の計算に使う作業用ベクトル */
@@ -278,14 +292,23 @@ function Label({
     undefined,
     labelPixelRatio(window.devicePixelRatio),
   )
-  // 近いと小さく、遠いと大きく出して、画面上の大きさが極端に変わらないようにする
+  // 近いと小さく、遠いと大きく出して、画面上の大きさが極端に変わらないようにする。
+  // 長い名札は近距離で画面幅を超えるため、画面幅の約 90% で頭打ちにする
   const scaler = useRef<Group>(null)
   const camera = useThree((s) => s.camera)
+  const viewport = useThree((s) => s.size)
   useFrame(() => {
     const g = scaler.current
     if (!g) return
     g.getWorldPosition(worldPoint)
-    g.scale.setScalar(labelDistanceScale(camera.position.distanceTo(worldPoint)))
+    const distance = camera.position.distanceTo(worldPoint)
+    const fit = labelMaxScale(
+      height * aspect,
+      distance,
+      (camera as PerspectiveCamera).fov,
+      viewport.width / viewport.height,
+    )
+    g.scale.setScalar(Math.min(labelDistanceScale(distance), fit))
   })
   return (
     <group ref={groupRef} position={position}>
@@ -457,7 +480,7 @@ function HotspotObject({
     if (reachMaterial.current) reachMaterial.current.opacity = e * 0.85
     if (glow.current) glow.current.visible = e > 0
     if (glowMaterial.current) glowMaterial.current.opacity = e * 0.8
-    labelGroup.current?.scale.setScalar(1 + e * 0.12)
+    labelGroup.current?.scale.setScalar(1 + e * (LABEL_EMPHASIS_MAX_SCALE - 1))
   })
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
