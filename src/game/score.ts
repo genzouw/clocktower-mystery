@@ -1,3 +1,4 @@
+import { isTitleHidden } from './hotspot'
 import { isUnlocked } from './scenario'
 import type { GameState } from './state'
 import type { PuzzleId, Scenario } from './types'
@@ -11,6 +12,8 @@ export interface PuzzleStat {
   solved: boolean
   /** 手がかりが足りず、まだ答えられない */
   locked: boolean
+  /** 一度も開いていない謎を伏せている（状態の表示も出さない） */
+  concealed: boolean
   hints: number
   hintsMax: number
   mistakes: number
@@ -25,14 +28,17 @@ export interface ScoreTotals {
 
 export function puzzleStats(
   scenario: Scenario,
-  state: Pick<GameState, 'solved' | 'hintsUsed' | 'mistakes'>,
+  state: Pick<GameState, 'solved' | 'hintsUsed' | 'mistakes' | 'seen'>,
 ): PuzzleStat[] {
   return scenario.puzzleOrder.map((id) => {
+    const hidden = isTitleHidden(scenario, state.seen, state.solved, id)
     const [number, name = ''] = scenario.puzzles[id].title.split('　')
     return {
       id,
-      number,
-      name,
+      // 一度も開いていない謎は、題名から場所が分からないよう伏せる
+      number: hidden ? '？' : number,
+      name: hidden ? '？？？' : name,
+      concealed: hidden,
       solved: state.solved.includes(id),
       locked: !state.solved.includes(id) && !isUnlocked(scenario, id, state.solved),
       hints: state.hintsUsed[id] ?? 0,
@@ -40,6 +46,17 @@ export function puzzleStats(
       mistakes: state.mistakes[id] ?? 0,
     }
   })
+}
+
+/** 成績表の行の状態表示。伏せている謎は、記号も状態の文言も出さない */
+export function statusView(s: Pick<PuzzleStat, 'solved' | 'locked' | 'concealed'>): {
+  mark: string
+  label: string | undefined
+} {
+  if (s.concealed) return { mark: '', label: undefined }
+  if (s.solved) return { mark: '✔', label: '解決済み' }
+  if (s.locked) return { mark: '🔒', label: '手がかり不足' }
+  return { mark: '・', label: '挑戦できる' }
 }
 
 export function totals(stats: PuzzleStat[]): ScoreTotals {

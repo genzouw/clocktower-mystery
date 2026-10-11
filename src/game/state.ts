@@ -11,6 +11,8 @@ export interface GameState {
   hintsUsed: Partial<Record<PuzzleId, number>>
   /** 謎ごとに答えを間違えた回数 */
   mistakes: Partial<Record<PuzzleId, number>>
+  /** 一度でも謎の画面を開いた謎（目印を伏せるシナリオで、題名を見せてよいか決める） */
+  seen: PuzzleId[]
   cleared: boolean
 }
 
@@ -23,6 +25,7 @@ export function initialState(scenario: Scenario): GameState {
     evidence: [...scenario.initialEvidence],
     hintsUsed: {},
     mistakes: {},
+    seen: [],
     cleared: false,
   }
 }
@@ -30,6 +33,7 @@ export function initialState(scenario: Scenario): GameState {
 export type Action =
   | { type: 'start' }
   | { type: 'move'; to: RoomId }
+  | { type: 'open'; id: PuzzleId }
   | { type: 'solve'; id: PuzzleId }
   | { type: 'collect'; id: EvidenceId }
   | { type: 'hint'; id: PuzzleId }
@@ -52,6 +56,8 @@ export function reducerFor(scenario: Scenario) {
           room: action.to,
           visited: addUnique(state.visited, action.to),
         }
+      case 'open':
+        return { ...state, seen: addUnique(state.seen, action.id) }
       case 'solve': {
         // 手がかりがそろっていない謎は解けない（画面側でも入力させない）
         if (!isUnlocked(scenario, action.id, state.solved)) return state
@@ -59,6 +65,7 @@ export function reducerFor(scenario: Scenario) {
         return {
           ...state,
           solved: addUnique(state.solved, action.id),
+          seen: addUnique(state.seen, action.id),
           evidence: reward ? addUnique(state.evidence, reward) : state.evidence,
           cleared: state.cleared || action.id === scenario.finalPuzzle,
         }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { clocktower } from './scenarios/clocktower'
-import { detectiveRank, puzzleStats, totals } from './score'
+import { detectiveRank, puzzleStats, statusView, totals } from './score'
 import { parseSave } from './storage'
 import { initialState, reducerFor, type Action, type GameState } from './state'
 
@@ -85,5 +85,73 @@ describe('成績の集計', () => {
     expect(detectiveRank(clocktower, { hints: 3, mistakes: 2 }).title).toBe('敏腕探偵')
     expect(detectiveRank(clocktower, { hints: 10, mistakes: 5 }).title).toBe('探偵')
     expect(detectiveRank(clocktower, { hints: 20, mistakes: 1 }).title).toBe('探偵見習い')
+  })
+})
+
+describe('開いた謎の記録（seen）', () => {
+  it('謎の画面を開くと記録され、同じ謎を重ねて記録しない', () => {
+    const s = play([
+      { type: 'open', id: 'p5' },
+      { type: 'open', id: 'p5' },
+    ])
+    expect(s.seen).toEqual(['p5'])
+  })
+
+  it('解いた謎も開いた謎として記録し、はじめからで消える', () => {
+    const s = play([{ type: 'solve', id: 'p1' }])
+    expect(s.seen).toEqual(['p1'])
+    expect(play([{ type: 'reset' }], s).seen).toEqual([])
+  })
+
+  it('この項目の無い古い保存データも読み込める', () => {
+    const old = JSON.stringify({ started: true, room: 'study', solved: ['p1'] })
+    expect(parseSave(old, clocktower).seen).toEqual(['p1'])
+    expect(parseSave(JSON.stringify({ started: true }), clocktower).seen).toEqual([])
+  })
+})
+
+describe('目印を伏せるシナリオの成績表', () => {
+  const hidden = { ...clocktower, hotspotMarkers: 'hidden' as const }
+  const state = (over: Partial<GameState>) => ({ ...initialState(clocktower), ...over })
+
+  it('visible では、開いていない謎も題名を出す', () => {
+    const stats = puzzleStats(clocktower, state({}))
+    expect(stats[0].name).not.toBe('？？？')
+    expect(stats.every((s) => s.name !== '？？？')).toBe(true)
+  })
+
+  it('hidden では、一度も開いていない謎の名前を「？？？」にする', () => {
+    const stats = puzzleStats(hidden, state({ seen: ['p2'], solved: ['p1'] }))
+    const byId = Object.fromEntries(stats.map((s) => [s.id, s]))
+    expect(byId.p1.name).toBe(puzzleStats(clocktower, state({})).find((s) => s.id === 'p1')!.name)
+    expect(byId.p2.name).not.toBe('？？？')
+    expect(byId.p3.name).toBe('？？？')
+    expect(byId.p3.number).toBe('？')
+  })
+
+  it('hidden では、開いていない謎に状態（記号・挑戦できる・手がかり不足）を出さない', () => {
+    const stats = puzzleStats(hidden, state({ seen: ['p2'], solved: ['p1'] }))
+    const byId = Object.fromEntries(stats.map((s) => [s.id, s]))
+    // 開いていない謎は、手がかり不足でも挑戦できる状態でも同じ（伏せる）
+    expect(statusView(byId.p3)).toEqual({ mark: '', label: undefined })
+    expect(statusView(byId.p3)).toEqual(statusView(byId.p4))
+    // 解いた謎・開いた謎は従来どおり
+    expect(statusView(byId.p1)).toEqual({ mark: '✔', label: '解決済み' })
+    expect(statusView(byId.p2).label).toMatch(/挑戦できる|手がかり不足/)
+  })
+
+  it('visible では、全ての謎に従来どおりの状態を出す', () => {
+    const stats = puzzleStats(clocktower, state({ solved: ['p1'] }))
+    expect(stats.every((s) => !s.concealed)).toBe(true)
+    expect(statusView(stats.find((s) => s.id === 'p1')!)).toEqual({ mark: '✔', label: '解決済み' })
+    expect(stats.find((s) => s.id === 'p3')!.locked).toBe(true)
+    expect(statusView(stats.find((s) => s.id === 'p3')!)).toEqual({
+      mark: '🔒',
+      label: '手がかり不足',
+    })
+    expect(statusView(stats.find((s) => s.id === 'p2')!)).toEqual({
+      mark: '・',
+      label: '挑戦できる',
+    })
   })
 })

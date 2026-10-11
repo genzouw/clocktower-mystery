@@ -27,6 +27,11 @@ export interface Hotspot {
   text: string
   puzzle?: PuzzleId
   evidence?: EvidenceId
+  /**
+   * true なら、その謎の前提をすべて解くまでは普通の物として説明文だけを見せる
+   * （謎の画面を開かず、名札や輪にも謎の印を出さない）
+   */
+  concealed?: boolean
 }
 
 export interface Room {
@@ -110,6 +115,13 @@ export interface RankThresholds {
 }
 
 /**
+ * 謎のある物の目印の出し方。
+ * visible は台座の輪と名札の【謎】【手がかり不足】【解決】を出す。
+ * hidden は、謎のある物とない物を同じ見た目にし、一度も開いていない謎の名前を「？？？」と伏せる
+ */
+export type HotspotMarkers = 'visible' | 'hidden'
+
+/**
  * シナリオ 1 つ分のデータ。進行ロジック・3D の世界・画面の部品は、これを引数か props で受け取る。
  * シナリオに依存する値（部屋・謎の ID、謎の数、犯人など）は、ここ以外に書かない
  */
@@ -144,4 +156,6 @@ export interface Scenario {
   evidence: Record<EvidenceId, Evidence>
   ending: Ending
   rank: RankThresholds
+  /** 謎の場所の目印。省略すると visible */
+  hotspotMarkers?: HotspotMarkers
 }
