@@ -9,6 +9,7 @@ import { ROOMS } from './rooms'
 export const clocktower: Scenario = {
   id: 'clocktower',
   title: '時計塔の館と星の涙',
+  difficulty: 2,
   titleLines: ['時計塔の館と', '星の涙'],
   titleEmoji: '🕰️💎',
   lead: [

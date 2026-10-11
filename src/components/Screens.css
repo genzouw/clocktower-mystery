@@ -1,0 +1,16 @@
+.reset-confirm {
+  margin-top: 8px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--danger);
+  border-radius: 12px;
+  text-align: center;
+}
+.reset-confirm .btn {
+  margin: 4px;
+}
+.btn.danger {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: #fff;
+}

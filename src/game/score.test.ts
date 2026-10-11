@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { clocktower } from './scenarios/clocktower'
 import { detectiveRank, puzzleStats, totals } from './score'
-import { initialState, parseSave, reducerFor, type Action, type GameState } from './state'
+import { parseSave } from './storage'
+import { initialState, reducerFor, type Action, type GameState } from './state'
 
 const PUZZLES = clocktower.puzzles
 const reducer = reducerFor(clocktower)

@@ -82,33 +82,3 @@ export function reducerFor(scenario: Scenario) {
     }
   }
 }
-
-// シナリオ 1 のキー。既存プレイヤーの進行を引き継ぐため、キーと保存形式は変えない
-const STORAGE_KEY = 'clocktower-mystery:v1'
-
-/** 保存データを読み込む。古い版で保存した項目の欠けたデータは初期値で補う */
-export function parseSave(raw: string | null, scenario: Scenario): GameState {
-  const initial = initialState(scenario)
-  if (!raw) return initial
-  try {
-    return { ...initial, ...(JSON.parse(raw) as Partial<GameState>) }
-  } catch {
-    return initial
-  }
-}
-
-export function loadState(scenario: Scenario): GameState {
-  try {
-    return parseSave(localStorage.getItem(STORAGE_KEY), scenario)
-  } catch {
-    return initialState(scenario)
-  }
-}
-
-export function saveState(state: GameState): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-  } catch {
-    // プライベートブラウズ等で保存できなくても遊べるようにする
-  }
-}
