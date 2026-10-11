@@ -171,8 +171,9 @@ export function Constellations() {
         const x = 30 + i * 60
         return (
           <g key={c.name}>
+            {/* U+FE0E で、カラー絵文字ではなくテキストの字形（墨一色）に固定する */}
             <text x={x} y="44" fontSize="30" textAnchor="middle" fill="currentColor">
-              {c.symbol}
+              {`${c.symbol}\uFE0E`}
             </text>
             <text x={x} y="70" fontSize="11" textAnchor="middle" fill="currentColor">
               {c.name}
