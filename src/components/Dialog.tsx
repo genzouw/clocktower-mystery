@@ -117,6 +117,7 @@ export function Dialog({ title, onClose, meta, children, footer, className }: Pr
   return (
     <div
       className="dialog-backdrop"
+      role="presentation"
       onPointerDown={(e) => {
         pressTargetRef.current = e.target
       }}
