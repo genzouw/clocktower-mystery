@@ -1,7 +1,5 @@
+import { MAGIC_CELLS, STAFF_NOTES } from '../game/figures'
 import type { Puzzle } from '../game/types'
-
-/** 五線譜上の音符。y はト音記号の五線で一番下の線（ミ）を 70 とした座標 */
-const STAFF_NOTES = [60, 80, 70, 55]
 
 function Staff() {
   const lines = [30, 40, 50, 60, 70]
@@ -90,7 +88,7 @@ function Books() {
 }
 
 function Magic() {
-  const cells = ['2', '7', '6', '', '5', '', '？', '？', '？']
+  const cells = MAGIC_CELLS
   return (
     <div className="magic">
       {cells.map((c, i) => (
