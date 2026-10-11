@@ -39,6 +39,9 @@ import { emojiTexture, glowTexture, labelTexture } from './textures'
 
 /** 名札の距離の計算に使う作業用ベクトル */
 const worldPoint = new Vector3()
+/** 名札の幅の上限（カメラ前方向の奥行き）の計算に使う作業用ベクトル */
+const cameraForward = new Vector3()
+const cameraToPoint = new Vector3()
 
 const EYE_HEIGHT = 1.6
 const WALK_SPEED = 2.6
@@ -302,9 +305,14 @@ function Label({
     if (!g) return
     g.getWorldPosition(worldPoint)
     const distance = camera.position.distanceTo(worldPoint)
+    // 画面上の幅を決めるのは視点からの直線距離ではなく、カメラ前方向の奥行き。
+    // 視軸から外れた名札ほど直線距離のままでは上限が緩むため、前方向へ射影する。
+    // 奥行きが 0 以下（カメラの後ろ）のときは labelMaxScale が制限しない（Infinity）
+    camera.getWorldDirection(cameraForward)
+    const depth = cameraToPoint.copy(worldPoint).sub(camera.position).dot(cameraForward)
     const fit = labelMaxScale(
       height * aspect,
-      distance,
+      depth,
       (camera as PerspectiveCamera).fov,
       viewport.width / viewport.height,
     )

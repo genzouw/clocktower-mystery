@@ -56,7 +56,7 @@ export const LABEL_EMPHASIS_MAX_SCALE = 1.12
  * 引数が不正なときは制限しない（Infinity を返す）
  *
  * @param labelWidth 名札の幅（ワールド座標）
- * @param distance 視点から名札までの距離
+ * @param distance カメラ前方向の奥行き（視点から名札までのベクトルを視軸へ射影した長さ。直線距離ではない）
  * @param fovDegrees カメラの縦方向の視野角（度）
  * @param aspect 画面の幅 / 高さ
  */
