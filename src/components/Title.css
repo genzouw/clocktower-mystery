@@ -1,0 +1,46 @@
+/* タイトル画面（シナリオごと）の、見やすさと質感の追加 */
+
+.title-screen .title-emoji {
+  filter: drop-shadow(0 4px 18px var(--accent-soft));
+}
+.title-screen h1 {
+  letter-spacing: var(--tracking-heading);
+  text-shadow: 0 2px 16px var(--accent-soft);
+}
+.title-screen .lead {
+  max-width: 24em;
+  color: var(--text);
+  opacity: 0.85;
+}
+.title-screen .btn {
+  min-width: 14em;
+}
+.title-screen .howto {
+  margin-top: var(--sp-5);
+  max-width: 24em;
+}
+.title-screen .howto h3 {
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  color: var(--accent);
+  letter-spacing: var(--tracking-body);
+}
+.title-screen .howto ul {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.title-screen .howto li {
+  position: relative;
+  padding-left: 1.4em;
+  line-height: var(--lh-ui);
+}
+.title-screen .howto li::before {
+  content: '◆';
+  position: absolute;
+  left: 0;
+  color: var(--accent);
+  font-size: var(--fs-xs);
+  top: 0.35em;
+}

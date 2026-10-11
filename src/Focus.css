@@ -1,0 +1,9 @@
+/*
+ * 入力欄のフォーカスで枠線の色を変える規則。
+ * index.css の「input:focus-visible」（詳細度 0,1,1）は、App.css の「.text-input input」（0,1,1）と同じで
+ * 後に読み込まれる側の border に負けて効かない。App.css を編集せずに済むよう、ここで
+ * 「.text-input input:focus-visible」（0,2,1）にする。詳細度が高いので、読み込み順に関係なく勝つ。
+ */
+.text-input input:focus-visible {
+  border-color: var(--focus);
+}
