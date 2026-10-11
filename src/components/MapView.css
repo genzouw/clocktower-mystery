@@ -1,0 +1,80 @@
+/*
+ * 見取り図（Panels.tsx の MapView）のスタイル。
+ * 階ごとに部屋を並べ、扉でつながる部屋の間に線を引く。謎の有無は出さない。
+ */
+
+.map-view {
+  --map-row: 92px;
+}
+
+.map-board {
+  position: relative;
+  display: grid;
+  margin-top: var(--sp-2);
+}
+
+.map-links {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+.map-links line {
+  stroke: var(--muted);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.map-slot {
+  position: relative;
+  padding: var(--sp-2);
+  min-width: 0;
+}
+
+.map-cell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-0);
+  padding: var(--sp-1);
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
+  background: var(--panel);
+  text-align: center;
+  font-family: var(--font-sans);
+  font-size: var(--fs-xs);
+  line-height: var(--lh-ui);
+  color: var(--muted);
+}
+.map-cell.seen {
+  border-style: solid;
+  background: var(--panel-2);
+  color: var(--text);
+}
+.map-cell.current {
+  border: 2px solid var(--accent);
+  box-shadow: var(--accent-glow);
+  color: var(--accent);
+}
+.map-name {
+  overflow-wrap: anywhere;
+}
+.map-here {
+  padding: 0 var(--sp-1h);
+  border-radius: var(--r-pill);
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: bold;
+}
+.map-stairs {
+  color: var(--muted);
+}
+
+.map-note {
+  margin: var(--sp-3) 0 0;
+  font-size: var(--fs-sm);
+  color: var(--muted);
+}

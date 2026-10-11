@@ -75,3 +75,20 @@ export function ScoreTable({ stats }: { stats: PuzzleStat[] }) {
     </table>
   )
 }
+
+/**
+ * 成績表の記号の凡例。いま表に出ている状態の分だけ出す
+ * （伏せている謎は記号を出さないので、hidden のシナリオで状態の種類を教えない）
+ */
+export function ScoreLegend({ stats }: { stats: PuzzleStat[] }) {
+  const items = new Map<string, string>()
+  for (const s of stats) {
+    const v = statusView(s)
+    if (v.label) items.set(v.label, v.mark)
+  }
+  // 並びは固定する（解決済み・挑戦できる・手がかり不足）
+  const order = ['解決済み', '挑戦できる', '手がかり不足']
+  const shown = order.filter((l) => items.has(l))
+  if (shown.length === 0) return null
+  return <p className="legend">{shown.map((l) => `${items.get(l)} ${l}`).join('　')}</p>
+}
