@@ -3,11 +3,13 @@ import { isCorrect } from './answer'
 import { isUnlocked, prerequisites } from './scenario'
 import { SCENARIOS } from './scenarios'
 import { solvers as clocktowerSolvers, type Solvers } from './scenarios/clocktower/solve'
+import { solvers as observatorySolvers } from './scenarios/observatory/solve'
 import type { PuzzleId } from './types'
 
 /** シナリオ ID → 謎ごとの総当たり関数。シナリオを足したら、ここにも足す */
 const SOLVERS: Record<string, Solvers> = {
   clocktower: clocktowerSolvers,
+  observatory: observatorySolvers,
 }
 
 describe('登録されたシナリオ', () => {
