@@ -17,9 +17,8 @@ import {
   withoutClues,
 } from './solve'
 
-// シナリオ 2 の登録（scenarios/index.ts）は部屋と配置を加えるタスクで行う。
-// それまでは、謎のデータだけを持つ値を `Scenario` として扱い、依存関係の関数に渡す。
-// 登録後は、scenarios.test.ts の describe.each が同じ検証を全シナリオに対して回す
+// 謎のデータだけを持つ値を `Scenario` として扱い、依存関係の関数に渡す
+// （部屋を含む完全な値は、同じディレクトリの index.ts にある）
 const scenario = {
   id: 'observatory',
   puzzles: PUZZLES,
