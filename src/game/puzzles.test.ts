@@ -1,9 +1,13 @@
 import { describe, expect, it } from 'vitest'
 import { isCorrect, normalize } from './answer'
-import { EVIDENCE } from './evidence'
-import { PUZZLES, PUZZLE_ORDER, SUSPECTS, isUnlocked, prerequisites } from './puzzles'
-import { ROOMS } from './rooms'
+import { isUnlocked as isUnlockedIn, prerequisites as prerequisitesIn } from './scenario'
+import { clocktower } from './scenarios/clocktower'
 import type { PuzzleId } from './types'
+
+const { puzzles: PUZZLES, puzzleOrder: PUZZLE_ORDER, evidence: EVIDENCE, rooms: ROOMS } = clocktower
+const SUSPECTS = clocktower.suspects
+const isUnlocked = (id: PuzzleId, solved: PuzzleId[]) => isUnlockedIn(clocktower, id, solved)
+const prerequisites = (id: PuzzleId) => prerequisitesIn(clocktower, id)
 
 function permutations<T>(items: T[]): T[][] {
   if (items.length <= 1) return [items]

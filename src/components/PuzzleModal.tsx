@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { isCorrect } from '../game/answer'
-import { PUZZLES, prerequisites } from '../game/puzzles'
-import type { Puzzle, PuzzleId } from '../game/types'
+import { prerequisites } from '../game/scenario'
+import type { Puzzle, PuzzleId, Scenario } from '../game/types'
 import { Figure } from './Figure'
 
 interface Props {
+  scenario: Scenario
   puzzle: Puzzle
   /** これまでに解いた謎（手がかりがそろっているかの判定に使う） */
   solvedIds: PuzzleId[]
@@ -19,6 +20,7 @@ interface Props {
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '⌫', '0', '✓']
 
 export function PuzzleModal({
+  scenario,
   puzzle,
   solvedIds,
   hintsUsed,
@@ -31,7 +33,7 @@ export function PuzzleModal({
   const [input, setInput] = useState('')
   const [wrong, setWrong] = useState(false)
   const solved = solvedIds.includes(puzzle.id)
-  const missing = prerequisites(puzzle.id).filter((id) => !solvedIds.includes(id))
+  const missing = prerequisites(scenario, puzzle.id).filter((id) => !solvedIds.includes(id))
   const answerable = missing.length === 0
 
   const submit = (value: string) => {
@@ -106,7 +108,7 @@ export function PuzzleModal({
             <p>手がかりが足りない。先に次の謎を解こう。</p>
             <ul>
               {missing.map((id) => (
-                <li key={id}>{PUZZLES[id].title}</li>
+                <li key={id}>{scenario.puzzles[id].title}</li>
               ))}
             </ul>
           </div>

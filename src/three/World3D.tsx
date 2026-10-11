@@ -1,16 +1,13 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'
 import type { Mesh, PointLight, Sprite } from 'three'
-import { isUnlocked } from '../game/puzzles'
-import { ROOMS } from '../game/rooms'
-import type { Hotspot, PuzzleId, RoomId } from '../game/types'
+import { isUnlocked } from '../game/scenario'
+import type { Hotspot, PuzzleId, RoomId, Scenario } from '../game/types'
 import {
   DOOR_HEIGHT,
   PLINTH_SIZE,
   ROOM_SIZE,
-  THEME,
   WALL_HEIGHT,
-  buildWorld,
   hotspotPosition,
   isAtPortal,
   portalArrival,
@@ -24,9 +21,6 @@ import { Joystick } from './Joystick'
 import { PlayerRig } from './playerRig'
 import { emojiTexture, labelTexture } from './textures'
 
-/** 館の形は謎の進行に依存しないので、読み込み時に一度だけ組み立てる */
-const WORLD = buildWorld()
-
 const EYE_HEIGHT = 1.6
 const WALK_SPEED = 2.6
 const TURN_SPEED = 2
@@ -37,6 +31,9 @@ const REACH = 2.8
 const TAP_SLOP = 10
 
 interface Props {
+  scenario: Scenario
+  /** 館の形（謎の進行に依存しない）。シナリオから 1 度だけ組み立てたもの */
+  world: World
   room: RoomId
   solved: PuzzleId[]
   paused: boolean
@@ -47,7 +44,7 @@ interface Props {
 }
 
 export function World3D(props: Props) {
-  const [rig] = useState(() => new PlayerRig(spawnPoint(props.room)))
+  const [rig] = useState(() => new PlayerRig(spawnPoint(props.world, props.room)))
   const stick = useRef({ x: 0, y: 0 })
   const look = useRef<{ id: number; x: number; y: number } | null>(null)
   // フレームループから最新の props を参照するための入れ物
@@ -63,16 +60,17 @@ export function World3D(props: Props) {
 
   // セーブデータの読み込みやリセットで部屋が変わったら、その部屋へ移す
   useEffect(() => {
-    if (roomAt(rig.pos) !== props.room) rig.placeAt(spawnPoint(props.room))
-  }, [rig, props.room])
+    if (roomAt(props.world, rig.pos) !== props.room)
+      rig.placeAt(spawnPoint(props.world, props.room))
+  }, [rig, props.world, props.room])
 
   const enterPortal = (portal: Portal) => {
-    rig.placeAt(portalArrival(WORLD, portal.room, portal.exit))
+    rig.placeAt(portalArrival(props.world, portal.room, portal.exit))
     latest.current.onRoomChange(portal.exit.to)
   }
 
   const tapHotspot = (room: RoomId, h: Hotspot) => {
-    if (rig.distanceTo(hotspotPosition(room, h)) > REACH)
+    if (rig.distanceTo(hotspotPosition(props.world, room, h)) > REACH)
       latest.current.onToast('もっと近づいて調べよう')
     else latest.current.onHotspot(room, h)
   }
@@ -107,15 +105,20 @@ export function World3D(props: Props) {
         <PlayerController
           rig={rig}
           stick={stick}
-          world={WORLD}
+          world={props.world}
           latest={latest}
           onPortal={enterPortal}
         />
-        <Rooms />
-        <Walls world={WORLD} />
-        <Doorways world={WORLD} />
-        <Portals world={WORLD} onTap={enterPortal} />
-        <Hotspots solved={props.solved} onTap={tapHotspot} />
+        <Rooms scenario={props.scenario} world={props.world} />
+        <Walls scenario={props.scenario} world={props.world} />
+        <Doorways scenario={props.scenario} world={props.world} />
+        <Portals world={props.world} onTap={enterPortal} />
+        <Hotspots
+          scenario={props.scenario}
+          world={props.world}
+          solved={props.solved}
+          onTap={tapHotspot}
+        />
       </Canvas>
       <Joystick onChange={(v) => (stick.current = v)} />
     </div>
@@ -181,12 +184,12 @@ function PlayerController({
         props.onFirstMove()
       }
 
-      const here = roomAt(rig.pos)
+      const here = roomAt(world, rig.pos)
       if (here && here !== props.room) props.onRoomChange(here)
 
       const nowNear = new Set<string>()
       for (const portal of world.portals) {
-        if (!isAtPortal(portal, rig.pos)) continue
+        if (!isAtPortal(world, portal, rig.pos)) continue
         const key = `portal:${portal.room}:${portal.exit.dir}`
         nowNear.add(key)
         if (!near.current.has(key)) onPortal(portal)
@@ -202,16 +205,16 @@ function PlayerController({
   return <pointLight ref={lantern} color="#ffcf8a" intensity={14} distance={11} decay={2} />
 }
 
-function Rooms() {
+function Rooms({ scenario, world }: { scenario: Scenario; world: World }) {
   return (
     <>
-      {Object.values(ROOMS).map((room) => {
-        const c = roomCenter(room.id)
+      {Object.values(scenario.rooms).map((room) => {
+        const c = roomCenter(world, room.id)
         return (
           <group key={room.id} position={[c.x, 0, c.z]}>
             <mesh rotation-x={-Math.PI / 2}>
               <planeGeometry args={[ROOM_SIZE, ROOM_SIZE]} />
-              <meshLambertMaterial color={THEME[room.id].floor} />
+              <meshLambertMaterial color={scenario.theme[room.id].floor} />
             </mesh>
             <mesh rotation-x={Math.PI / 2} position-y={WALL_HEIGHT}>
               <planeGeometry args={[ROOM_SIZE, ROOM_SIZE]} />
@@ -233,7 +236,7 @@ function Rooms() {
   )
 }
 
-function Walls({ world }: { world: World }) {
+function Walls({ scenario, world }: { scenario: Scenario; world: World }) {
   return (
     <>
       {world.walls.map((w, i) => {
@@ -241,7 +244,7 @@ function Walls({ world }: { world: World }) {
         return (
           <mesh key={i} position={[w.x, w.bottom + height / 2, w.z]}>
             <boxGeometry args={[w.hx * 2, height, w.hz * 2]} />
-            <meshLambertMaterial color={THEME[w.room].wall} />
+            <meshLambertMaterial color={scenario.theme[w.room].wall} />
           </mesh>
         )
       })}
@@ -286,7 +289,7 @@ function Emoji({
 }
 
 /** 扉の上の行き先看板と、鍵の掛かった扉 */
-function Doorways({ world }: { world: World }) {
+function Doorways({ scenario, world }: { scenario: Scenario; world: World }) {
   return (
     <>
       {world.doorways.map((d) => {
@@ -296,12 +299,12 @@ function Doorways({ world }: { world: World }) {
             {d.rooms.map((room) => {
               // 看板はその部屋の側に出し、向こう側の部屋の名前を書く
               const other = d.rooms.find((r) => r !== room)!
-              const c = roomCenter(room)
+              const c = roomCenter(world, room)
               const sign = Math.sign((c.x - d.x) * normal.x + (c.z - d.z) * normal.z)
               return (
                 <Label
                   key={room}
-                  text={ROOMS[other].name}
+                  text={scenario.rooms[other].name}
                   position={[
                     d.x + normal.x * sign * 0.3,
                     DOOR_HEIGHT + 0.35,
@@ -353,22 +356,27 @@ function Portals({ world, onTap }: { world: World; onTap: (p: Portal) => void })
 }
 
 function Hotspots({
+  scenario,
+  world,
   solved,
   onTap,
 }: {
+  scenario: Scenario
+  world: World
   solved: PuzzleId[]
   onTap: (room: RoomId, h: Hotspot) => void
 }) {
   return (
     <>
-      {Object.values(ROOMS).flatMap((room) =>
+      {Object.values(scenario.rooms).flatMap((room) =>
         room.hotspots.map((h) => (
           <HotspotObject
             key={h.id}
+            world={world}
             room={room.id}
             hotspot={h}
             done={h.puzzle ? solved.includes(h.puzzle) : false}
-            locked={h.puzzle ? !isUnlocked(h.puzzle, solved) : false}
+            locked={h.puzzle ? !isUnlocked(scenario, h.puzzle, solved) : false}
             onTap={onTap}
           />
         )),
@@ -378,12 +386,14 @@ function Hotspots({
 }
 
 function HotspotObject({
+  world,
   room,
   hotspot,
   done,
   locked,
   onTap,
 }: {
+  world: World
   room: RoomId
   hotspot: Hotspot
   done: boolean
@@ -391,7 +401,7 @@ function HotspotObject({
   locked: boolean
   onTap: (room: RoomId, h: Hotspot) => void
 }) {
-  const p = hotspotPosition(room, hotspot)
+  const p = hotspotPosition(world, room, hotspot)
   const icon = useRef<Sprite>(null)
   const ring = useRef<Mesh>(null)
   const isPuzzle = hotspot.puzzle !== undefined

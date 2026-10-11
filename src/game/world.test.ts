@@ -1,8 +1,7 @@
 import { describe, expect, it } from 'vitest'
-import { ROOMS } from './rooms'
+import { SCENARIOS } from './scenarios'
 import type { RoomId } from './types'
 import {
-  LAYOUT,
   PLAYER_RADIUS,
   ROOM_SIZE,
   buildWorld,
@@ -38,9 +37,9 @@ function explore(world: World, start: Vec2): Vec2[] {
       { x: p.x - STEP, z: p.z },
       { x: p.x, z: p.z + STEP },
       { x: p.x, z: p.z - STEP },
-    ].filter((q) => roomAt(q) && !blocked(q, world.colliders))
+    ].filter((q) => roomAt(world, q) && !blocked(q, world.colliders))
     for (const portal of world.portals) {
-      if (isAtPortal(portal, p)) {
+      if (isAtPortal(world, portal, p)) {
         next.push(portalArrival(world, portal.room, portal.exit).pos)
       }
     }
@@ -53,44 +52,45 @@ function explore(world: World, start: Vec2): Vec2[] {
   return [...seen.values()]
 }
 
-describe('館の間取り', () => {
+describe.each(SCENARIOS)('館の間取り: $id', (scenario) => {
+  const rooms = Object.values(scenario.rooms)
+  const world = buildWorld(scenario)
+
   it('部屋が同じ場所に重なっていない', () => {
-    const cells = Object.values(LAYOUT).map((c) => `${c.gx},${c.gz}`)
+    const cells = Object.values(scenario.layout).map((c) => `${c.gx},${c.gz}`)
     expect(new Set(cells).size).toBe(cells.length)
   })
 
   it('東西南北の出口は、その方角の隣の部屋につながっている', () => {
-    for (const room of Object.values(ROOMS)) {
+    for (const room of rooms) {
       for (const exit of room.exits) {
         if (exit.dir === 'up' || exit.dir === 'down') continue
-        expect(isAdjacentExit(room.id, exit), `${room.id} → ${exit.to}`).toBe(true)
+        expect(isAdjacentExit(world, room.id, exit), `${room.id} → ${exit.to}`).toBe(true)
       }
     }
   })
 
   it('初期位置と階段の出口は、壁や台座にめり込んでいない', () => {
-    const world = buildWorld()
-    for (const id of Object.keys(ROOMS) as RoomId[]) {
-      const { pos } = spawnPoint(id)
+    for (const id of Object.keys(scenario.rooms) as RoomId[]) {
+      const { pos } = spawnPoint(world, id)
       expect(blocked(pos, world.colliders), id).toBe(false)
-      expect(roomAt(pos)).toBe(id)
+      expect(roomAt(world, pos)).toBe(id)
     }
     for (const portal of world.portals) {
       const { pos } = portalArrival(world, portal.room, portal.exit)
       expect(blocked(pos, world.colliders), `${portal.room} → ${portal.exit.to}`).toBe(false)
-      expect(roomAt(pos)).toBe(portal.exit.to)
+      expect(roomAt(world, pos)).toBe(portal.exit.to)
     }
   })
 
-  it('最初から、玄関から歩いて全部屋・全部の物に手が届く', () => {
-    const world = buildWorld()
-    const points = explore(world, spawnPoint('hall').pos)
-    const reached = new Set(points.map((p) => roomAt(p)))
-    expect([...reached].sort()).toEqual(Object.keys(ROOMS).sort())
+  it('最初から、開始の部屋から歩いて全部屋・全部の物に手が届く', () => {
+    const points = explore(world, spawnPoint(world, scenario.startRoom).pos)
+    const reached = new Set(points.map((p) => roomAt(world, p)))
+    expect([...reached].sort()).toEqual(Object.keys(scenario.rooms).sort())
 
-    for (const room of Object.values(ROOMS)) {
+    for (const room of rooms) {
       for (const h of room.hotspots) {
-        const target = hotspotPosition(room.id, h)
+        const target = hotspotPosition(world, room.id, h)
         const reachable = points.some(
           (p) => Math.hypot(p.x - target.x, p.z - target.z) <= REACH - 0.3,
         )
@@ -100,27 +100,27 @@ describe('館の間取り', () => {
   })
 
   it('台座は部屋の内側に収まり、扉の通り道をふさがない', () => {
-    const world = buildWorld()
-    for (const room of Object.values(ROOMS)) {
+    for (const room of rooms) {
       for (const h of room.hotspots) {
-        const p = hotspotPosition(room.id, h)
-        expect(roomAt(p), h.id).toBe(room.id)
+        const p = hotspotPosition(world, room.id, h)
+        expect(roomAt(world, p), h.id).toBe(room.id)
         for (const d of world.doorways) {
           expect(Math.hypot(p.x - d.x, p.z - d.z), `${h.id} が扉の前にある`).toBeGreaterThan(1.2)
         }
       }
     }
   })
-})
 
-describe('階段の扉', () => {
-  it('扉のある部屋の正面からだけ反応し、壁の裏の部屋からは反応しない', () => {
-    const world = buildWorld()
-    const up = world.portals.find((p) => p.room === 'corridor' && p.exit.dir === 'up')!
-    // 廊下の北壁の扉。廊下側（南）からは反応し、壁の向こうの図書室からは反応しない
-    expect(isAtPortal(up, { x: up.x, z: up.z + 0.5 })).toBe(true)
-    expect(isAtPortal(up, { x: up.x, z: up.z - 0.6 })).toBe(false)
-    expect(roomAt({ x: up.x, z: up.z - 0.6 })).toBe('library')
+  it('階段の扉は、扉のある部屋の正面からだけ反応し、壁の裏からは反応しない', () => {
+    for (const portal of world.portals) {
+      const at = (d: number): Vec2 => ({
+        x: portal.x + portal.facing.x * d,
+        z: portal.z + portal.facing.z * d,
+      })
+      const name = `${portal.room} → ${portal.exit.to}`
+      expect(isAtPortal(world, portal, at(0.5)), name).toBe(true)
+      expect(isAtPortal(world, portal, at(-0.6)), name).toBe(false)
+    }
   })
 })
 
