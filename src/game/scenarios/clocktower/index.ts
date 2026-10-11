@@ -35,4 +35,5 @@ export const clocktower: Scenario = {
   evidence: EVIDENCE,
   ending: ENDING,
   rank: RANK,
+  hotspotMarkers: 'visible',
 }

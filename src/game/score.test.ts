@@ -87,3 +87,45 @@ describe('成績の集計', () => {
     expect(detectiveRank(clocktower, { hints: 20, mistakes: 1 }).title).toBe('探偵見習い')
   })
 })
+
+describe('開いた謎の記録（seen）', () => {
+  it('謎の画面を開くと記録され、同じ謎を重ねて記録しない', () => {
+    const s = play([
+      { type: 'open', id: 'p5' },
+      { type: 'open', id: 'p5' },
+    ])
+    expect(s.seen).toEqual(['p5'])
+  })
+
+  it('解いた謎も開いた謎として記録し、はじめからで消える', () => {
+    const s = play([{ type: 'solve', id: 'p1' }])
+    expect(s.seen).toEqual(['p1'])
+    expect(play([{ type: 'reset' }], s).seen).toEqual([])
+  })
+
+  it('この項目の無い古い保存データも読み込める', () => {
+    const old = JSON.stringify({ started: true, room: 'study', solved: ['p1'] })
+    expect(parseSave(old, clocktower).seen).toEqual(['p1'])
+    expect(parseSave(JSON.stringify({ started: true }), clocktower).seen).toEqual([])
+  })
+})
+
+describe('目印を伏せるシナリオの成績表', () => {
+  const hidden = { ...clocktower, hotspotMarkers: 'hidden' as const }
+  const state = (over: Partial<GameState>) => ({ ...initialState(clocktower), ...over })
+
+  it('visible では、開いていない謎も題名を出す', () => {
+    const stats = puzzleStats(clocktower, state({}))
+    expect(stats[0].name).not.toBe('？？？')
+    expect(stats.every((s) => s.name !== '？？？')).toBe(true)
+  })
+
+  it('hidden では、一度も開いていない謎の名前を「？？？」にする', () => {
+    const stats = puzzleStats(hidden, state({ seen: ['p2'], solved: ['p1'] }))
+    const byId = Object.fromEntries(stats.map((s) => [s.id, s]))
+    expect(byId.p1.name).toBe(puzzleStats(clocktower, state({})).find((s) => s.id === 'p1')!.name)
+    expect(byId.p2.name).not.toBe('？？？')
+    expect(byId.p3.name).toBe('？？？')
+    expect(byId.p3.number).toBe('？')
+  })
+})

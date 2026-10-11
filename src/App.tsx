@@ -1,5 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useReducer, useState } from 'react'
 import './App.css'
+import { hotspotAction, isTitleHidden } from './game/hotspot'
 import { cluesFrom } from './game/scenario'
 import { SCENARIOS } from './game/scenarios'
 import { puzzleStats } from './game/score'
@@ -85,8 +86,11 @@ function Game({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) 
   const handleRoomChange = useCallback((to: RoomId) => dispatch({ type: 'move', to }), [])
 
   const handleHotspot = (_room: RoomId, h: Hotspot) => {
-    if (h.puzzle) {
-      setOverlay({ kind: 'puzzle', id: h.puzzle })
+    // concealed の物は、前提を解くまで説明文だけを見せる
+    const action = hotspotAction(scenario, h, state.solved)
+    if (action.kind === 'puzzle') {
+      dispatch({ type: 'open', id: action.id })
+      setOverlay({ kind: 'puzzle', id: action.id })
       return
     }
     const isNew = h.evidence !== undefined && !state.evidence.includes(h.evidence)
@@ -99,7 +103,12 @@ function Game({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) 
     const reward = scenario.puzzles[id].reward
     const messages = [
       reward ? `手帳に「${scenario.evidence[reward].title}」を記録した` : '謎を解いた！',
-      ...cluesFrom(scenario, id).map((p) => `「${scenario.puzzles[p].title}」の手がかりを見つけた`),
+      ...cluesFrom(scenario, id).map((p) =>
+        // 目印を伏せるシナリオでは、まだ開いていない謎の題名を出さない
+        isTitleHidden(scenario, state.seen, state.solved, p)
+          ? '別の謎の手がかりを見つけた'
+          : `「${scenario.puzzles[p].title}」の手がかりを見つけた`,
+      ),
     ]
     setToast(messages.join('\n'))
   }

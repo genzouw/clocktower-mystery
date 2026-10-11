@@ -83,6 +83,8 @@ export function parseSave(raw: string | null, scenario: Scenario): GameState {
     evidence: keepIds(merged.evidence, evidenceIds, initial.evidence),
     hintsUsed: keepCounts(merged.hintsUsed, puzzleIds),
     mistakes: keepCounts(merged.mistakes, puzzleIds),
+    // この項目が無い古い保存データは、解いた謎だけを開いたことにする
+    seen: [...new Set([...keepIds(merged.seen, puzzleIds, []), ...solved])],
     // 最後の謎が解けていない保存データを「解決済み」として扱わない
     cleared: merged.cleared === true && solved.includes(scenario.finalPuzzle),
   }

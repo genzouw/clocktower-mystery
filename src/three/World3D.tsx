@@ -1,7 +1,7 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'
 import type { Mesh, PointLight, Sprite } from 'three'
-import { isUnlocked } from '../game/scenario'
+import { hotspotAppearance, type HotspotAppearance } from '../game/hotspot'
 import type { Hotspot, PuzzleId, RoomId, Scenario } from '../game/types'
 import {
   DOOR_HEIGHT,
@@ -375,8 +375,7 @@ function Hotspots({
             world={world}
             room={room.id}
             hotspot={h}
-            done={h.puzzle ? solved.includes(h.puzzle) : false}
-            locked={h.puzzle ? !isUnlocked(scenario, h.puzzle, solved) : false}
+            appearance={hotspotAppearance(scenario, h, solved)}
             onTap={onTap}
           />
         )),
@@ -389,22 +388,19 @@ function HotspotObject({
   world,
   room,
   hotspot,
-  done,
-  locked,
+  appearance,
   onTap,
 }: {
   world: World
   room: RoomId
   hotspot: Hotspot
-  done: boolean
-  /** 手がかりが足りず、まだ答えられない謎 */
-  locked: boolean
+  /** 輪と名札の見た目。シナリオの目印の設定と謎の状態から決まる */
+  appearance: HotspotAppearance
   onTap: (room: RoomId, h: Hotspot) => void
 }) {
   const p = hotspotPosition(world, room, hotspot)
   const icon = useRef<Sprite>(null)
   const ring = useRef<Mesh>(null)
-  const isPuzzle = hotspot.puzzle !== undefined
   const plinthHeight = 0.9
   // 位置ごとに位相をずらして、すべての物が揃って揺れないようにする
   const phase = (p.x * 7 + p.z * 13) % (Math.PI * 2)
@@ -412,7 +408,7 @@ function HotspotObject({
   useFrame(({ clock }) => {
     const t = clock.elapsedTime + phase
     if (icon.current) icon.current.position.y = plinthHeight + 0.45 + Math.sin(t * 2) * 0.05
-    if (ring.current && isPuzzle && !done && !locked) {
+    if (ring.current && appearance.pulse) {
       const s = 1 + Math.sin(t * 3) * 0.12
       ring.current.scale.set(s, s, 1)
     }
@@ -425,14 +421,7 @@ function HotspotObject({
   }
 
   const { texture } = emojiTexture(hotspot.emoji)
-  // 謎の状態ごとの名札と輪の色（解決済み・手がかり不足・挑戦できる）
-  const status = done
-    ? { prefix: '【解決】', color: '#7cc49a' }
-    : locked
-      ? { prefix: '【手がかり不足】', color: '#9a8f86' }
-      : { prefix: '【謎】', color: '#e0b354' }
-  const label = isPuzzle ? `${status.prefix}${hotspot.name}` : hotspot.name
-  const labelColor = isPuzzle ? status.color : undefined
+  const label = `${appearance.prefix}${hotspot.name}`
 
   return (
     <group position={[p.x, 0, p.z]}>
@@ -440,10 +429,10 @@ function HotspotObject({
         <boxGeometry args={[PLINTH_SIZE, plinthHeight, PLINTH_SIZE]} />
         <meshLambertMaterial color="#3a2616" />
       </mesh>
-      {isPuzzle && (
+      {appearance.ringColor !== null && (
         <mesh ref={ring} rotation-x={-Math.PI / 2} position-y={plinthHeight + 0.01}>
           <ringGeometry args={[0.26, 0.34, 32]} />
-          <meshBasicMaterial color={status.color} />
+          <meshBasicMaterial color={appearance.ringColor} />
         </mesh>
       )}
       <sprite
@@ -454,7 +443,12 @@ function HotspotObject({
       >
         <spriteMaterial map={texture} transparent depthWrite={false} />
       </sprite>
-      <Label text={label} position={[0, plinthHeight + 1.05, 0]} height={0.22} color={labelColor} />
+      <Label
+        text={label}
+        position={[0, plinthHeight + 1.05, 0]}
+        height={0.22}
+        color={appearance.labelColor}
+      />
     </group>
   )
 }

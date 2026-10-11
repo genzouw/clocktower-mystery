@@ -1,3 +1,4 @@
+import { isTitleHidden } from './hotspot'
 import { isUnlocked } from './scenario'
 import type { GameState } from './state'
 import type { PuzzleId, Scenario } from './types'
@@ -25,14 +26,16 @@ export interface ScoreTotals {
 
 export function puzzleStats(
   scenario: Scenario,
-  state: Pick<GameState, 'solved' | 'hintsUsed' | 'mistakes'>,
+  state: Pick<GameState, 'solved' | 'hintsUsed' | 'mistakes' | 'seen'>,
 ): PuzzleStat[] {
   return scenario.puzzleOrder.map((id) => {
+    const hidden = isTitleHidden(scenario, state.seen, state.solved, id)
     const [number, name = ''] = scenario.puzzles[id].title.split('　')
     return {
       id,
-      number,
-      name,
+      // 一度も開いていない謎は、題名から場所が分からないよう伏せる
+      number: hidden ? '？' : number,
+      name: hidden ? '？？？' : name,
       solved: state.solved.includes(id),
       locked: !state.solved.includes(id) && !isUnlocked(scenario, id, state.solved),
       hints: state.hintsUsed[id] ?? 0,

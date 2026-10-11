@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { ScenarioSelect } from '../components/ScenarioSelect'
-import { reducerFor, initialState, type GameState } from './state'
+import { reducerFor, initialState } from './state'
 import { SCENARIOS } from './scenarios'
 import { clocktower } from './scenarios/clocktower'
 import {
@@ -68,22 +68,32 @@ describe('更新前に保存した進行（シナリオ 1）', () => {
   it('従来のキーから、内容を変えずに続きから遊べる状態として読み込める', () => {
     const store = memoryStore({ 'clocktower-mystery:v1': JSON.stringify(legacy) })
     const s = loadState(clocktower, store)
-    expect(s).toEqual(legacy)
+    // seen の無い保存データは、解いた謎を開いたものとして補う
+    expect(s).toEqual({ ...legacy, seen: ['p1', 'p2'] })
     expect(scenarioStatus(clocktower, s)).toEqual({ kind: 'playing', solved: 2, total: 10 })
   })
 
   it('保存すると従来のキーに同じ形式で書き、他のキーは増やさない', () => {
     const store = memoryStore()
-    saveState(clocktower, legacy as GameState, store)
+    const state = { ...legacy, seen: ['p1', 'p2'] }
+    saveState(clocktower, state, store)
     expect([...store.data.keys()]).toEqual(['clocktower-mystery:v1'])
-    expect(JSON.parse(store.data.get('clocktower-mystery:v1')!)).toEqual(legacy)
+    expect(JSON.parse(store.data.get('clocktower-mystery:v1')!)).toEqual(state)
   })
 
   it('読み込んで保存し直しても、既存のセーブデータが壊れない', () => {
     const raw = JSON.stringify(legacy)
     const store = memoryStore({ 'clocktower-mystery:v1': raw })
     saveState(clocktower, loadState(clocktower, store), store)
-    expect(JSON.parse(store.data.get('clocktower-mystery:v1')!)).toEqual(legacy)
+    expect(JSON.parse(store.data.get('clocktower-mystery:v1')!)).toEqual({
+      ...legacy,
+      seen: ['p1', 'p2'],
+    })
+  })
+
+  it('開いた謎の記録は保存され、存在しない ID は取り除かれる', () => {
+    const raw = JSON.stringify({ ...legacy, seen: ['p3', 'nope', 7] })
+    expect(parseSave(raw, clocktower).seen).toEqual(['p3', 'p1', 'p2'])
   })
 
   it('解決済みの保存データは「解決済み」になり、ランクが出る', () => {
