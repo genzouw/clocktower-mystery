@@ -1,19 +1,162 @@
+/*
+ * デザイントークンと、画面全体の基本スタイル。
+ * 色・文字・余白・角丸・影・動きの値はここに集め、App.css などは var(--…) で参照する。
+ */
+
 :root {
+  /* ---------- 配色（背景・面・文字・意味色） ---------- */
   --bg: #120e14;
+  --bg-deep: #0d0a0f; /* 入力欄・数字錠など、面より一段沈めたい所 */
   --panel: #1f1922;
   --panel-2: #2a2230;
+  --panel-3: #3a3042;
+
   --text: #f1e9dc;
   --muted: #b3a89a;
+
   --accent: #e0b354;
-  --accent-ink: #2a1d05;
-  --danger: #e06b5a;
+  --accent-ink: #2a1d05; /* アクセント色の面に載せる文字 */
+
+  --danger: #ef7a69;
   --ok: #7cc49a;
+  --ok-ink: #0d2416;
+
+  /* 画面内の「物」（紙・木）の色 */
+  --paper: #f3e9d2;
+  --paper-ink: #2a1d05;
+  --wood: #5a3d28;
+  --wood-dark: #4a2216;
+
+  /* タイトル・エンディングの背景に敷く光の色 */
+  --aura: #3a2a48;
+
   --line: rgba(241, 233, 220, 0.16);
-  font-family: 'Hiragino Mincho ProN', 'Yu Mincho', 'Noto Serif JP', serif;
+  --scrim: rgba(0, 0, 0, 0.7);
+  --hud-surface: rgba(18, 14, 20, 0.82);
+  --scrim-top: rgba(0, 0, 0, 0.78); /* 上部バーの下に敷く、明るい部屋でも文字を読ませる影 */
+  --stick-fill: rgba(255, 255, 255, 0.08);
+  --stick-line: rgba(255, 255, 255, 0.25);
+
+  /* ---------- 文字（OS のフォントで組む。Web フォントは読み込まない） ---------- */
+  --font-serif:
+    'Hiragino Mincho ProN', 'Hiragino Mincho Pro', 'Yu Mincho', YuMincho, 'Noto Serif JP',
+    'Noto Serif CJK JP', 'Source Han Serif JP', 'BIZ UDPMincho', 'MS PMincho', serif;
+  --font-sans:
+    'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Yu Gothic UI', 'Yu Gothic', 'Noto Sans JP',
+    'Noto Sans CJK JP', 'BIZ UDPGothic', Meiryo, system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+
+  /* 文字サイズは 6 段 */
+  --fs-xs: 0.75rem; /* 12px: 注記・バッジ */
+  --fs-sm: 0.875rem; /* 14px: 補助・表 */
+  --fs-md: 1rem; /* 16px: 本文 */
+  --fs-lg: 1.25rem; /* 20px: 見出し */
+  --fs-xl: 1.75rem; /* 28px: 数値・順位 */
+  --fs-2xl: 2.25rem; /* 36px: 画面の題名 */
+  --fs-glyph: 1.6rem; /* 25.6px: 錠・暗号の記号 */
+  --fs-hero: 3.5rem; /* 56px: タイトルの絵文字 */
+
+  --lh-body: 1.8;
+  --lh-ui: 1.5;
+  --lh-heading: 1.4;
+  --tracking-body: 0.03em;
+  --tracking-heading: 0.06em;
+
+  /* ---------- 余白（4px を基準にした尺度） ---------- */
+  --sp-0: 2px;
+  --sp-1: 4px;
+  --sp-1h: 6px;
+  --sp-2: 8px;
+  --sp-2h: 10px;
+  --sp-3: 12px;
+  --sp-3h: 14px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+
+  /* ---------- タップ対象（推奨 44px 以上） ---------- */
+  --tap: 44px;
+  --tap-comfy: 48px;
+
+  /* ---------- 角丸 ---------- */
+  --r-xs: 4px;
+  --r-sm: 8px;
+  --r-ms: 10px;
+  --r-md: 12px;
+  --r-ml: 14px;
+  --r-lg: 18px;
+  --r-pill: 999px;
+
+  /* ---------- 影 ---------- */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-3: 0 -8px 32px rgba(0, 0, 0, 0.55);
+  --shadow-inset: inset 0 2px 6px rgba(0, 0, 0, 0.55); /* 沈んだ面（入力欄・錠） */
+  --shadow-spine: inset -6px 0 0 rgba(0, 0, 0, 0.25); /* 本の背 */
+  --shadow-paper: 0 6px 16px rgba(0, 0, 0, 0.5); /* 紙の浮き */
+  --text-halo: 0 1px 3px #000, 0 2px 8px #000; /* 3D の上に載せる文字の縁取り */
+  --highlight: inset 0 1px 0 rgba(255, 255, 255, 0.06); /* 面の上端の艶 */
+
+  /* ---------- 動き（フェード・押下・発光はこの尺度に揃える） ---------- */
+  --dur-fast: 120ms;
+  --dur: 220ms;
+  --dur-slow: 600ms;
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
+
+  /* ---------- フォーカス表示 ---------- */
+  --focus: #ffe3a1;
+
+  font-family: var(--font-serif);
   color: var(--text);
   background: var(--bg);
   -webkit-text-size-adjust: 100%;
   -webkit-tap-highlight-color: transparent;
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * アクセント色から導く色。
+ * 「:root, [data-scenario]」に書くのは、要素ごとに --accent を差し替えたとき、
+ * 導出色も同じ要素で再計算されるようにするため（:root だけに書くと、差し替えが導出色へ届かない）。
+ *
+ * color-mix() 非対応の環境（Chrome 107〜110、Safari 16.0〜16.1）では、var() に color-mix() を
+ * 含む宣言が「計算時に無効」になり、背景が transparent になる。そこで次の 2 段にする。
+ *   1. 既定のアクセント色（#e0b354）と面の色（--panel）から計算した固定値を先に置く。
+ *   2. @supports で color-mix() が使えるときだけ、--accent に追従する式で上書きする。
+ * 限界: 非対応環境では、--accent を差し替えても導出色（--accent-hover など）は既定の金色のまま。
+ * 差し替えたアクセントの面（--accent）と文字（--accent-ink）は追従するので、ボタンの文字は読める。
+ * 固定値を変えるときは、既定の --accent・--panel の値から計算し直す。
+ *
+ * シナリオごとに色を変えるときは、<html data-scenario="…"> を付け、
+ * 次の形で --accent と --accent-ink だけを上書きする。
+ *   [data-scenario='observatory'] {
+ *     --accent: #9fc7ff;
+ *     --accent-ink: #0a1830;
+ *   }
+ * 上書きする組は、アクセント色と各面（--panel など）、アクセント色と --accent-ink の
+ * コントラスト比がどちらも 4.5:1 以上になることを確かめる。
+ */
+:root,
+[data-scenario] {
+  --accent-hover: #e4be6c; /* --accent 86% + 白 14% */
+  --accent-soft: rgba(224, 179, 84, 0.14);
+  --accent-glow: 0 0 14px rgba(224, 179, 84, 0.55);
+  --accent-knob: rgba(224, 179, 84, 0.75);
+  --ok-soft: rgba(124, 196, 154, 0.14);
+  --panel-top: #2a252d; /* --panel 95% + 白 5%: パネルの上端の明るさ */
+}
+
+@supports (color: color-mix(in srgb, red, blue)) {
+  :root,
+  [data-scenario] {
+    --accent-hover: color-mix(in srgb, var(--accent) 86%, white);
+    --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+    --accent-glow: 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent);
+    --accent-knob: color-mix(in srgb, var(--accent) 75%, transparent);
+    --ok-soft: color-mix(in srgb, var(--ok) 14%, transparent);
+    --panel-top: color-mix(in srgb, var(--panel) 95%, white);
+  }
 }
 
 * {
@@ -30,22 +173,69 @@ body,
 
 body {
   overscroll-behavior: none;
+  font-size: var(--fs-md);
+  line-height: var(--lh-body);
+  letter-spacing: var(--tracking-body);
+  /* 句読点・括弧の禁則を厳しくし、可能なら文節で折り返す（未対応の環境では無視される） */
+  line-break: strict;
+  word-break: auto-phrase;
+}
+
+/* UI の文字（ボタン・表・入力・通知）はゴシック体にし、小さな文字を読みやすくする */
+button,
+input,
+summary,
+table,
+.toast {
+  font-family: var(--font-sans);
 }
 
 button,
 input {
-  font: inherit;
+  font-size: inherit;
+  letter-spacing: 0.02em;
   color: inherit;
 }
 
+/* 見出しは明朝体のまま、palt で字間を詰め、字送りを広げて品を出す */
 h1,
 h2,
 h3 {
-  margin: 0 0 12px;
-  line-height: 1.4;
+  margin: 0 0 var(--sp-3);
+  line-height: var(--lh-heading);
+  letter-spacing: var(--tracking-heading);
+  font-feature-settings: 'palt';
+  text-wrap: balance;
 }
 
 p {
-  margin: 0 0 10px;
-  line-height: 1.75;
+  margin: 0 0 var(--sp-2h);
+  line-height: var(--lh-body);
+  text-wrap: pretty;
+}
+
+/* ---------- フォーカス表示（キーボード・スイッチ操作で位置が分かるようにする） ---------- */
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+/* ポインタ操作ではフォーカスの輪を出さない */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+input:focus-visible {
+  outline-offset: 0;
+  border-color: var(--focus);
+}
+
+/* ---------- 動きを減らす設定 ---------- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
