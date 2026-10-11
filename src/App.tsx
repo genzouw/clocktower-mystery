@@ -1,5 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useReducer, useState } from 'react'
 import './App.css'
+import './Hud.css'
+import './Focus.css'
 import { solveToast, tapOutcome } from './game/hotspot'
 import { SCENARIOS } from './game/scenarios'
 import { puzzleStats } from './game/score'
@@ -75,6 +77,13 @@ function Game({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) 
   const [onTitle, setOnTitle] = useState(true)
 
   useEffect(() => saveState(scenario, state), [scenario, state])
+
+  // 操作ガイドは最初に動くか、しばらくすると消える。「操作」ボタンで再表示できる
+  useEffect(() => {
+    if (!showGuide) return
+    const t = window.setTimeout(() => setShowGuide(false), 10000)
+    return () => window.clearTimeout(t)
+  }, [showGuide])
 
   useEffect(() => {
     if (!toast) return
@@ -153,17 +162,25 @@ function Game({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) 
         <div className="room-title">
           <small>{room.floor}</small> {room.name}
         </div>
-        <div className="progress" aria-label={`解いた謎 ${state.solved.length} / ${puzzleCount}`}>
-          🔑 {state.solved.length}/{puzzleCount}
+        <div
+          className="progress"
+          role="img"
+          aria-label={`解いた謎 ${state.solved.length} / ${puzzleCount}`}
+        >
+          <span aria-hidden="true">
+            🔑 {state.solved.length}
+            <span className="progress-total">/{puzzleCount}</span>
+          </span>
         </div>
       </header>
 
       {showGuide && (
-        <div className="guide">
-          <p>左下のスティックで歩く</p>
-          <p>画面をドラッグして見回す</p>
-          <p>近づいて物をタップして調べる</p>
-        </div>
+        <button className="guide" onClick={() => setShowGuide(false)}>
+          <span>左下のスティックで歩く</span>
+          <span>画面をドラッグして見回す</span>
+          <span>近づいて物をタップして調べる</span>
+          <small>タップで閉じる</small>
+        </button>
       )}
 
       <footer className="toolbar">
@@ -172,6 +189,9 @@ function Game({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) 
         </button>
         <button className="btn tool" onClick={() => setOverlay({ kind: 'map' })}>
           🗺️ 見取り図
+        </button>
+        <button className="btn tool" onClick={() => setShowGuide(true)}>
+          🧭 操作
         </button>
         <button className="btn tool" onClick={onExit}>
           📁 メニュー

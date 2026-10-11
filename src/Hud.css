@@ -1,0 +1,75 @@
+/*
+ * プレイ中の HUD（トップバー・操作ガイド・ツールバー）。
+ * App.css の同名の規則を、同じ詳細度で後から上書きする（App.tsx で App.css の後に読み込む）。
+ */
+
+/* 部屋名と進捗は、明るい部屋の上でも読めるよう、不透明に近い面の上に置く */
+.topbar {
+  gap: var(--sp-3);
+  align-items: flex-start;
+}
+.room-title,
+.progress {
+  background: var(--hud-surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow-2);
+  padding: var(--sp-1h) var(--sp-3);
+  line-height: var(--lh-ui);
+  text-shadow: none;
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+}
+.room-title {
+  min-width: 0;
+  font-size: var(--fs-lg);
+  color: var(--text);
+}
+.progress {
+  flex: none;
+  font-family: var(--font-sans);
+  font-size: var(--fs-lg);
+}
+.progress-total {
+  font-size: var(--fs-sm);
+  color: var(--muted);
+  margin-left: 1px;
+}
+
+/*
+ * 操作ガイド。画面中央には 3D の名札が並ぶので、トップバーのすぐ下に置いて重ならないようにする。
+ * ボタンにして、タップで閉じられるようにする。
+ */
+.guide {
+  top: calc(var(--sp-7) + var(--sp-5) + env(safe-area-inset-top));
+  display: grid;
+  gap: var(--sp-0);
+  color: var(--text);
+  line-height: var(--lh-ui);
+  pointer-events: auto;
+  cursor: pointer;
+}
+.guide small {
+  color: var(--muted);
+  font-size: var(--fs-xs);
+  margin-top: var(--sp-1);
+}
+
+/* 手帳・見取り図・操作・メニューは、48px 以上のタップ対象として右下に並べる */
+.toolbar {
+  gap: var(--sp-2);
+}
+.btn.tool {
+  min-width: var(--tap-comfy);
+  min-height: var(--tap-comfy);
+  font-size: var(--fs-md);
+  justify-content: flex-start;
+  text-align: left;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .guide {
+    animation: none;
+  }
+}

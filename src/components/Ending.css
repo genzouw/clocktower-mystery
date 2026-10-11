@@ -1,0 +1,39 @@
+/*
+ * エンディング。結末 → 推理のまとめ（1 項目ずつ）→ 後日談 → 成績 → ボタンの順に現れる。
+ * 順番は要素の style="--i: n" で決める。
+ */
+@keyframes reveal-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+}
+
+.ending-screen .reveal {
+  animation: reveal-in var(--dur-slow) var(--ease) both;
+  animation-delay: calc(var(--i, 0) * 700ms);
+}
+
+.ending-screen .lead {
+  font-size: var(--fs-lg);
+  color: var(--text);
+}
+.ending-screen .explain li {
+  margin-bottom: var(--sp-2);
+}
+.ending-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-3);
+  width: 100%;
+}
+
+/* 動きを減らす設定では、時間差をつけず、最初から全部を表示する */
+@media (prefers-reduced-motion: reduce) {
+  .ending-screen .reveal {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}
