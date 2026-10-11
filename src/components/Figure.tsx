@@ -1,5 +1,12 @@
 import { MAGIC_CELLS, STAFF_NOTES } from '../game/figures'
 import type { Puzzle } from '../game/types'
+import {
+  BreakerPanel,
+  CipherObservatory,
+  Constellations,
+  PlateBoxes,
+  StarGrid,
+} from './figures/Observatory'
 
 function Staff() {
   const lines = [30, 40, 50, 60, 70]
@@ -117,6 +124,16 @@ export function Figure({ figure }: { figure: Puzzle['figure'] }) {
       return <Magic />
     case 'cipher':
       return <Cipher />
+    case 'plateBoxes':
+      return <PlateBoxes />
+    case 'cipherObservatory':
+      return <CipherObservatory />
+    case 'starGrid':
+      return <StarGrid />
+    case 'breakerPanel':
+      return <BreakerPanel />
+    case 'constellations':
+      return <Constellations />
     default:
       return null
   }
