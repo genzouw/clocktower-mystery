@@ -230,7 +230,7 @@ export function MapView({
                 className="map-slot"
                 style={{ gridColumn: p.x + 1, gridRow: p.y + 1 }}
               >
-                <div className={`map-cell ${seen ? 'seen' : ''} ${isCurrent ? 'current' : ''}`}>
+                <div className={`map-room ${seen ? 'seen' : ''} ${isCurrent ? 'current' : ''}`}>
                   <span className="map-name">{seen ? r.name : '？？？'}</span>
                   {isCurrent && <span className="map-here">現在地</span>}
                   {others.length > 0 && (
