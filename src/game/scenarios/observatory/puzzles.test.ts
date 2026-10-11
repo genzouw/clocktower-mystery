@@ -6,7 +6,16 @@ import type { PuzzleId, Scenario } from '../../types'
 import { ENDING, RANK } from './ending'
 import { EVIDENCE } from './evidence'
 import { PUZZLE_ORDER, PUZZLES, SUSPECTS } from './puzzles'
-import { allSudokuGrids, PAINTINGS, solvers, SUSPECT_TRAITS, withoutClues } from './solve'
+import {
+  allSudokuGrids,
+  BLACKOUT_LIGHTS,
+  BREAKER_FEEDS,
+  PAINTINGS,
+  solvers,
+  stairReadings,
+  SUSPECT_TRAITS,
+  withoutClues,
+} from './solve'
 
 // シナリオ 2 の登録（scenarios/index.ts）は部屋と配置を加えるタスクで行う。
 // それまでは、謎のデータだけを持つ値を `Scenario` として扱い、依存関係の関数に渡す。
@@ -21,6 +30,11 @@ const scenario = {
   ending: ENDING,
   rank: RANK,
 } as unknown as Scenario
+
+/** 「助手・氷室」→「氷室」。証拠の文は役職を付けずに名前だけを書く */
+const shortName = (full: string) => full.split('・').at(-1)!
+const traitNames = (pick: (s: (typeof SUSPECT_TRAITS)[number]) => boolean) =>
+  SUSPECT_TRAITS.filter(pick).map((s) => shortName(s.name))
 
 const others = PUZZLE_ORDER.filter((id) => id !== 'q12')
 
@@ -39,6 +53,13 @@ describe('シナリオ 2：雪の天文台と消えた彗星 — 謎の解の一
     const answers = solvers[id]()
     expect(answers).toHaveLength(1)
     expect(isCorrect(PUZZLES[id], answers[0])).toBe(true)
+  })
+
+  it('q10：外階段の階を 1階・地下・2階と読むと解が 1 つに決まらないので、問題文は「どれにも数えない」と書く', () => {
+    expect(PUZZLES.q10.question).toContain('1階・2階・地下のどれにも数えない')
+    expect([...new Set(stairReadings.firstFloor())].sort()).toEqual(['銀', '銅', '真鍮'].sort())
+    expect([...new Set(stairReadings.basement())].sort()).toEqual(['鉄', '真鍮'].sort())
+    expect(stairReadings.secondFloor()).toEqual([])
   })
 
   it('q6：4×4 の数独は 288 通りあり、与えたマスで 1 つに絞れる', () => {
@@ -227,5 +248,60 @@ describe('シナリオ 2：答えの表記ゆれ', () => {
     for (const input of ['ろうかのほしのえ', '廊下の星の絵', 'ろうかの星の絵', 'ロウカノホシノエ'])
       expect(isCorrect(PUZZLES.q5, input), input).toBe(true)
     expect(isCorrect(PUZZLES.q5, 'ろうかのほし')).toBe(false)
+  })
+})
+
+describe('シナリオ 2：総当たりの定数と、問題文・証拠の文面の一致', () => {
+  it('q9：配線図の手がかりが、BREAKER_FEEDS のすべての番号と部屋を書いている', () => {
+    const clue = PUZZLES.q9.clues!.find((c) => c.from === 'q6')!.text
+    const entries = Object.entries(BREAKER_FEEDS)
+    expect(entries).toHaveLength(4)
+    for (const [n, rooms] of entries)
+      expect(clue, `${n}番`).toContain(`${n}番＝${rooms.join('・')}`)
+    // 手がかりに書かれた「N番＝」の数が、定数の番号の数と同じ（定数に無い番号を書いていない）
+    expect(clue.match(/\d番＝/g)).toHaveLength(entries.length)
+  })
+
+  it('q9：停電中の明暗が、問題文（明るい部屋・暗い部屋）と q2 の手がかり（暗室）に書かれている', () => {
+    const q = PUZZLES.q9.question
+    const roomsWhere = (on: boolean) =>
+      Object.entries(BLACKOUT_LIGHTS)
+        .filter(([room, lit]) => lit === on && room !== '暗室')
+        .map(([room]) => room)
+    expect(q).toContain(`${roomsWhere(true).join('と')}は明るかった`)
+    expect(q).toContain(`${roomsWhere(false).join('・')}は暗かった`)
+    // 暗室は問題文に書かず、q2 の手がかりで知らせる
+    expect(BLACKOUT_LIGHTS['暗室']).toBe(true)
+    expect(q).not.toContain('暗室')
+    const q2clue = PUZZLES.q9.clues!.find((c) => c.from === 'q2')!.text
+    expect(q2clue).toContain('暗室')
+    expect(q2clue).toContain('安全灯')
+  })
+
+  it('BLACKOUT_LIGHTS の部屋は、すべて配線図のどれかの番号が電気を送る', () => {
+    const fed = new Set(Object.values(BREAKER_FEEDS).flat())
+    for (const room of Object.keys(BLACKOUT_LIGHTS)) expect(fed.has(room), room).toBe(true)
+  })
+
+  it('SUSPECT_TRAITS：長靴・ドームの番号が、証拠の文の名前の並びと一致する', () => {
+    const listed = (text: string, pattern: RegExp) => text.match(pattern)![1].split('・').sort()
+    expect(listed(EVIDENCE.soles.text, /格子模様の靴底は ([^、]+?)、/)).toEqual(
+      traitNames((s) => s.grid).sort(),
+    )
+    const holders = traitNames((s) => s.knowsCode).sort()
+    expect(listed(EVIDENCE.codeholders.text, /教えたのは、(.+?) の/)).toEqual(holders)
+    expect(EVIDENCE.codeholders.text).toContain(`${holders.length}人`)
+    expect(listed(ENDING.steps[1], /番号を知っていたのは (.+?) の/)).toEqual(holders)
+  })
+
+  it('SUSPECT_TRAITS：一緒だったと確かめられない人が、証拠・結末・q12 のヒントの文と一致する', () => {
+    const alone = traitNames((s) => s.noAlibi)
+    expect(alone).toEqual(['氷室', '灯'])
+    const phrase = `${alone.join('と')}`
+    expect(ENDING.steps[3]).toContain(`${phrase}だけ`)
+    expect(PUZZLES.q12.hints[2]).toContain(phrase)
+    // 他の 4 人は、証拠の文で居場所が確かめられている
+    for (const s of SUSPECT_TRAITS.filter((t) => !t.noAlibi))
+      expect(EVIDENCE.alibi.text, s.name).toContain(shortName(s.name))
   })
 })

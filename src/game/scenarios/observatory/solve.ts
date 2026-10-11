@@ -233,15 +233,18 @@ function decisiveBoxes(): string[] {
   }).map((label) => `「${label}」の札の箱`)
 }
 
-/** q10：鍵と扉の対応 5! = 120 通りのうち、①〜⑤を満たすもの。外階段の扉に合う鍵を返す */
-function stairKeys(): string[] {
+/**
+ * q10：鍵と扉の対応 5! = 120 通りのうち、①〜⑤を満たすもの。外階段の扉に合う鍵を返す。
+ * stairFloor は外階段の階の読み。問題文は「1階・2階・地下のどれにも数えない」（屋外）と書く
+ */
+function stairKeys(stairFloor = '屋外'): string[] {
   const keys = ['金', '銀', '銅', '鉄', '真鍮']
   const doors = [
     { name: '暗室', floor: '1階' },
     { name: '書庫', floor: '1階' },
     { name: '客室', floor: '2階' },
     { name: '倉庫', floor: '地下' },
-    { name: '外階段', floor: '屋外' },
+    { name: '外階段', floor: stairFloor },
   ]
   return permutations(doors)
     .filter((assigned) => {
@@ -319,3 +322,10 @@ export const withoutClues = {
     ),
   q11: () => constellationCodes(false),
 } satisfies Record<string, () => string[]>
+
+/** q10：外階段の階を問題文と違う読みにすると、解が 1 つに決まらない（問題文に屋外と書く必要があることを示す） */
+export const stairReadings = {
+  firstFloor: () => stairKeys('1階'),
+  secondFloor: () => stairKeys('2階'),
+  basement: () => stairKeys('地下'),
+}
