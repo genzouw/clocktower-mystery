@@ -1,14 +1,21 @@
 import type { PuzzleStat, ScoreTotals } from '../game/score'
 
 /** 合計値を大きく見せるタイル */
-export function ScoreSummary({ totals }: { totals: ScoreTotals }) {
+export function ScoreSummary({
+  totals,
+  puzzleCount,
+}: {
+  totals: ScoreTotals
+  /** 謎の総数（解いた謎の分母） */
+  puzzleCount: number
+}) {
   return (
     <div className="score-summary">
       <div className="score-tile">
         <span className="score-label">解いた謎</span>
         <b>
           {totals.solved}
-          <small>/10</small>
+          <small>/{puzzleCount}</small>
         </b>
       </div>
       <div className="score-tile">

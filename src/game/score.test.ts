@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { PUZZLES } from './puzzles'
+import { clocktower } from './scenarios/clocktower'
 import { detectiveRank, puzzleStats, totals } from './score'
-import { initialState, parseSave, reducer, type Action, type GameState } from './state'
+import { initialState, parseSave, reducerFor, type Action, type GameState } from './state'
 
-const play = (actions: Action[], from: GameState = initialState) => actions.reduce(reducer, from)
+const PUZZLES = clocktower.puzzles
+const reducer = reducerFor(clocktower)
+const play = (actions: Action[], from: GameState = initialState(clocktower)) =>
+  actions.reduce(reducer, from)
 
 describe('ヒントと誤答の記録', () => {
   it('手がかりがそろっていない謎は解いたことにならない', () => {
@@ -47,11 +50,11 @@ describe('ヒントと誤答の記録', () => {
       solved: ['p1'],
       hintsUsed: { p1: 1 },
     })
-    const s = parseSave(old)
+    const s = parseSave(old, clocktower)
     expect(s.mistakes).toEqual({})
     expect(s.hintsUsed).toEqual({ p1: 1 })
     expect(s.room).toBe('study')
-    expect(parseSave('{壊れたデータ')).toEqual(initialState)
+    expect(parseSave('{壊れたデータ', clocktower)).toEqual(initialState(clocktower))
   })
 })
 
@@ -63,7 +66,7 @@ describe('成績の集計', () => {
       { type: 'mistake', id: 'p2' },
       { type: 'solve', id: 'p1' },
     ])
-    const stats = puzzleStats(s)
+    const stats = puzzleStats(clocktower, s)
     expect(stats).toHaveLength(10)
     expect(stats[0]).toMatchObject({
       number: '第1の謎',
@@ -77,9 +80,9 @@ describe('成績の集計', () => {
   })
 
   it('ヒントと誤答の合計で探偵ランクが決まる', () => {
-    expect(detectiveRank({ hints: 0, mistakes: 0 }).title).toBe('名探偵')
-    expect(detectiveRank({ hints: 3, mistakes: 2 }).title).toBe('敏腕探偵')
-    expect(detectiveRank({ hints: 10, mistakes: 5 }).title).toBe('探偵')
-    expect(detectiveRank({ hints: 20, mistakes: 1 }).title).toBe('探偵見習い')
+    expect(detectiveRank(clocktower, { hints: 0, mistakes: 0 }).title).toBe('名探偵')
+    expect(detectiveRank(clocktower, { hints: 3, mistakes: 2 }).title).toBe('敏腕探偵')
+    expect(detectiveRank(clocktower, { hints: 10, mistakes: 5 }).title).toBe('探偵')
+    expect(detectiveRank(clocktower, { hints: 20, mistakes: 1 }).title).toBe('探偵見習い')
   })
 })

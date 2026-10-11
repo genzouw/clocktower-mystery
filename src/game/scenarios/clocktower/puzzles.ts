@@ -1,4 +1,4 @@
-import type { Puzzle, PuzzleId } from './types'
+import type { Puzzle, PuzzleId } from '../../types'
 
 export const SUSPECTS = [
   '執事・佐伯',
@@ -227,19 +227,3 @@ export const PUZZLE_ORDER: PuzzleId[] = [
   'p9',
   'p10',
 ]
-
-/** この謎に答えるために先に解いておく謎（手がかりの出どころを含む） */
-export function prerequisites(id: PuzzleId): PuzzleId[] {
-  const p = PUZZLES[id]
-  return [...new Set([...(p.requires ?? []), ...(p.clues ?? []).map((c) => c.from)])]
-}
-
-/** 必要な謎をすべて解いていれば答えられる */
-export function isUnlocked(id: PuzzleId, solved: PuzzleId[]): boolean {
-  return prerequisites(id).every((p) => solved.includes(p))
-}
-
-/** この謎を解くと手がかりが見つかる謎 */
-export function cluesFrom(id: PuzzleId): PuzzleId[] {
-  return PUZZLE_ORDER.filter((p) => PUZZLES[p].clues?.some((c) => c.from === id))
-}

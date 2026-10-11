@@ -1,27 +1,37 @@
+import { Fragment } from 'react'
 import { detectiveRank, totals, type PuzzleStat } from '../game/score'
+import type { Scenario } from '../game/types'
 import { ScoreSummary, ScoreTable } from './ScoreTable'
 
 export function TitleScreen({
+  scenario,
   hasProgress,
   onStart,
   onReset,
 }: {
+  scenario: Scenario
   hasProgress: boolean
   onStart: () => void
   onReset: () => void
 }) {
   return (
     <div className="screen title-screen">
-      <div className="title-emoji">🕰️💎</div>
+      <div className="title-emoji">{scenario.titleEmoji}</div>
       <h1>
-        時計塔の館と
-        <br />
-        星の涙
+        {scenario.titleLines.map((line, i) => (
+          <Fragment key={i}>
+            {i > 0 && <br />}
+            {line}
+          </Fragment>
+        ))}
       </h1>
       <p className="lead">
-        時任伯爵の館で、宝石「星の涙」が盗まれた。
-        <br />
-        館を歩き回り、10の謎を解いて犯人を突き止めよ。
+        {scenario.lead.map((line, i) => (
+          <Fragment key={i}>
+            {i > 0 && <br />}
+            {line}
+          </Fragment>
+        ))}
       </p>
       <button className="btn primary big" onClick={onStart}>
         {hasProgress ? 'つづきから' : '館に入る'}
@@ -34,35 +44,40 @@ export function TitleScreen({
       <div className="howto">
         <h3>遊び方</h3>
         <ul>
-          <li>部屋の中の物をタップすると調べられる。光る物には謎がある</li>
-          <li>画面端の矢印・下のボタン・スワイプで部屋を移動</li>
-          <li>集めた証拠は「手帳」でいつでも見返せる</li>
-          <li>進行状況はこの端末に自動で保存される</li>
+          {scenario.howto.map((item) => (
+            <li key={item}>{item}</li>
+          ))}
         </ul>
       </div>
     </div>
   )
 }
 
-export function EndingScreen({ stats, onRestart }: { stats: PuzzleStat[]; onRestart: () => void }) {
+export function EndingScreen({
+  scenario,
+  stats,
+  onRestart,
+}: {
+  scenario: Scenario
+  stats: PuzzleStat[]
+  onRestart: () => void
+}) {
   const sum = totals(stats)
-  const rank = detectiveRank(sum)
+  const rank = detectiveRank(scenario, sum)
+  const { ending } = scenario
   return (
     <div className="screen ending-screen">
       <div className="title-emoji">🎉</div>
       <h1>事件解決！</h1>
-      <p className="lead">犯人は 執事・佐伯 だった。</p>
+      <p className="lead">犯人は {ending.culprit} だった。</p>
       <div className="explain">
         <h3>推理のまとめ</h3>
         <ol>
-          <li>金庫のダイヤルは左手で回されていた → 犯人は左利き。左利きは佐伯と蓮の2人だけ。</li>
-          <li>書斎の時計が止まったのは 21時30分。その時刻、マルコは厨房、小春は音楽室にいた。</li>
-          <li>温室の隠し棚に残った靴跡は 26cm。蓮の靴は 27cm。</li>
-          <li>3つの条件をすべて満たすのは、佐伯ただ一人。</li>
+          {ending.steps.map((step) => (
+            <li key={step}>{step}</li>
+          ))}
         </ol>
-        <p>
-          観念した佐伯は、塔の大時計の振り子の中から「星の涙」を取り出した。館の時計の手入れを任されていた彼は、時計に細工がされていることにまでは気づかなかったのだ。
-        </p>
+        <p>{ending.epilogue}</p>
       </div>
       <section className="result" aria-labelledby="result-title">
         <h3 id="result-title">捜査の成績</h3>
@@ -70,7 +85,7 @@ export function EndingScreen({ stats, onRestart }: { stats: PuzzleStat[]; onRest
           あなたは <b>{rank.title}</b>
         </p>
         <p className="rank-comment">{rank.comment}</p>
-        <ScoreSummary totals={sum} />
+        <ScoreSummary totals={sum} puzzleCount={stats.length} />
         <details className="result-detail">
           <summary>謎ごとの内訳を見る</summary>
           <ScoreTable stats={stats} />

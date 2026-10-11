@@ -1,4 +1,4 @@
-import type { Room, RoomId } from './types'
+import type { Room, RoomId } from '../../types'
 
 export const ROOMS: Record<RoomId, Room> = {
   hall: {

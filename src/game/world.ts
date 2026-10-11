@@ -1,5 +1,4 @@
-import { ROOMS } from './rooms'
-import type { Direction, Exit, Hotspot, RoomId } from './types'
+import type { Exit, Hotspot, RoomId, Scenario, Side } from './types'
 
 /** 部屋1つの一辺の長さ（m） */
 export const ROOM_SIZE = 8
@@ -9,50 +8,6 @@ export const DOOR_WIDTH = 1.6
 export const DOOR_HEIGHT = 2.4
 export const PLAYER_RADIUS = 0.3
 export const PLINTH_SIZE = 0.8
-
-type Side = 'north' | 'south' | 'east' | 'west'
-
-/**
- * 3D 空間での部屋の配置（グリッド座標）。北は -z。
- * 東西南北の出口は隣接セルとつながる扉になり、階段（up / down）は離れた場所への転移扉になる。
- * 2階・地下・時計塔は 1階と離して置き、壁越しに見えないようにする。
- */
-export const LAYOUT: Record<RoomId, { gx: number; gz: number }> = {
-  library: { gx: 1, gz: 1 },
-  music: { gx: 2, gz: 1 },
-  greenhouse: { gx: 3, gz: 1 },
-  study: { gx: 0, gz: 2 },
-  corridor: { gx: 1, gz: 2 },
-  dining: { gx: 2, gz: 2 },
-  kitchen: { gx: 3, gz: 2 },
-  hall: { gx: 1, gz: 3 },
-  bedroom: { gx: 6, gz: 0 },
-  tower: { gx: 6, gz: 2 },
-  cellar: { gx: 6, gz: 3 },
-}
-
-export const THEME: Record<RoomId, { wall: string; floor: string }> = {
-  hall: { wall: '#6b4a32', floor: '#3d2a1c' },
-  corridor: { wall: '#4b3d58', floor: '#5b3a2b' },
-  study: { wall: '#2f4a3c', floor: '#4a3322' },
-  library: { wall: '#5a3d28', floor: '#2f241c' },
-  music: { wall: '#33406e', floor: '#3b2c25' },
-  greenhouse: { wall: '#3f7a52', floor: '#6b3324' },
-  dining: { wall: '#6e3434', floor: '#3d2a1c' },
-  kitchen: { wall: '#66604f', floor: '#5d5d5d' },
-  bedroom: { wall: '#4e3a6b', floor: '#3b2a40' },
-  cellar: { wall: '#3a3a3a', floor: '#3a3530' },
-  tower: { wall: '#2b3e66', floor: '#4a3b2a' },
-}
-
-/** 階段の転移扉を、部屋のどの壁のどの位置に置くか */
-const PORTAL_PLACES: Partial<
-  Record<RoomId, Partial<Record<Direction, { side: Side; offset: number }>>>
-> = {
-  corridor: { up: { side: 'north', offset: 2.6 }, down: { side: 'north', offset: -2.6 } },
-  bedroom: { down: { side: 'south', offset: 0 } },
-  cellar: { up: { side: 'south', offset: 0 } },
-}
 
 const SIDE_VECTOR: Record<Side, { dx: number; dz: number }> = {
   north: { dx: 0, dz: -1 },
@@ -100,41 +55,53 @@ export interface Portal {
   axis: 'x' | 'z'
 }
 
-export function roomCenter(id: RoomId): Vec2 {
-  const { gx, gz } = LAYOUT[id]
+export interface World {
+  walls: WallSegment[]
+  doorways: Doorway[]
+  portals: Portal[]
+  /** 歩けない場所（壁・台座） */
+  colliders: Box[]
+  /** 部屋の配置（グリッド座標） */
+  layout: Scenario['layout']
+  /** グリッド座標 `${gx},${gz}` → その場所にある部屋 */
+  cells: Map<string, RoomId>
+}
+
+export function roomCenter(world: Pick<World, 'layout'>, id: RoomId): Vec2 {
+  const { gx, gz } = world.layout[id]
   return { x: gx * ROOM_SIZE, z: gz * ROOM_SIZE }
 }
 
-const CELL_INDEX = new Map(
-  Object.entries(LAYOUT).map(([id, c]) => [`${c.gx},${c.gz}`, id as RoomId]),
-)
-
-function roomAtCell(gx: number, gz: number): RoomId | undefined {
-  return CELL_INDEX.get(`${gx},${gz}`)
+function roomAtCell(world: Pick<World, 'cells'>, gx: number, gz: number): RoomId | undefined {
+  return world.cells.get(`${gx},${gz}`)
 }
 
 /** 座標がどの部屋の中にあるか */
-export function roomAt(p: Vec2): RoomId | undefined {
-  return roomAtCell(Math.round(p.x / ROOM_SIZE), Math.round(p.z / ROOM_SIZE))
+export function roomAt(world: Pick<World, 'cells'>, p: Vec2): RoomId | undefined {
+  return roomAtCell(world, Math.round(p.x / ROOM_SIZE), Math.round(p.z / ROOM_SIZE))
 }
 
 /** 東西南北の出口で、隣のセルにある部屋とつながっているか */
-export function isAdjacentExit(from: RoomId, exit: Exit): boolean {
+export function isAdjacentExit(
+  world: Pick<World, 'layout' | 'cells'>,
+  from: RoomId,
+  exit: Exit,
+): boolean {
   if (exit.dir === 'up' || exit.dir === 'down') return false
   const v = SIDE_VECTOR[exit.dir]
-  const { gx, gz } = LAYOUT[from]
-  return roomAtCell(gx + v.dx, gz + v.dz) === exit.to
+  const { gx, gz } = world.layout[from]
+  return roomAtCell(world, gx + v.dx, gz + v.dz) === exit.to
 }
 
-export function hotspotPosition(room: RoomId, h: Hotspot): Vec2 {
-  const c = roomCenter(room)
+export function hotspotPosition(world: Pick<World, 'layout'>, room: RoomId, h: Hotspot): Vec2 {
+  const c = roomCenter(world, room)
   const span = ROOM_SIZE - 2
   return { x: c.x + (h.x / 100 - 0.5) * span, z: c.z + (h.y / 100 - 0.5) * span }
 }
 
 /** 壁の中心線上の点。offset は壁に沿った位置（北・南の壁なら x 方向） */
-function wallPoint(room: RoomId, side: Side, offset: number): Vec2 {
-  const c = roomCenter(room)
+function wallPoint(world: Pick<World, 'layout'>, room: RoomId, side: Side, offset: number): Vec2 {
+  const c = roomCenter(world, room)
   const v = SIDE_VECTOR[side]
   const half = ROOM_SIZE / 2
   return v.dz !== 0
@@ -142,31 +109,28 @@ function wallPoint(room: RoomId, side: Side, offset: number): Vec2 {
     : { x: c.x + v.dx * half, z: c.z + offset }
 }
 
-export interface World {
-  walls: WallSegment[]
-  doorways: Doorway[]
-  portals: Portal[]
-  /** 歩けない場所（壁・台座） */
-  colliders: Box[]
-}
-
 /** 部屋の配置と出口から、館の壁・扉・当たり判定を組み立てる */
-export function buildWorld(): World {
+export function buildWorld(scenario: Scenario): World {
+  const { rooms, layout } = scenario
+  const cells = new Map<string, RoomId>(
+    Object.entries(layout).map(([id, c]) => [`${c.gx},${c.gz}`, id]),
+  )
+  const geometry = { layout, cells }
   const walls: WallSegment[] = []
   const doorways: Doorway[] = []
   const portals: Portal[] = []
   const half = ROOM_SIZE / 2
   const t = WALL_THICKNESS / 2
 
-  for (const room of Object.values(ROOMS)) {
-    const { gx, gz } = LAYOUT[room.id]
+  for (const room of Object.values(rooms)) {
+    const { gx, gz } = layout[room.id]
     for (const side of ['north', 'south', 'east', 'west'] as Side[]) {
       const v = SIDE_VECTOR[side]
-      const neighbor = roomAtCell(gx + v.dx, gz + v.dz)
+      const neighbor = roomAtCell(geometry, gx + v.dx, gz + v.dz)
       // 隣り合う部屋の境目の壁は、北側・西側の部屋の分としてだけ作る
       if (neighbor && (side === 'south' || side === 'east')) continue
 
-      const center = wallPoint(room.id, side, 0)
+      const center = wallPoint(geometry, room.id, side, 0)
       const alongX = v.dz !== 0
       const segment = (from: number, to: number, bottom = 0): WallSegment => {
         const mid = (from + to) / 2
@@ -179,7 +143,9 @@ export function buildWorld(): World {
       const crossing = neighbor
         ? [
             ...room.exits.filter((e) => e.to === neighbor && e.dir === side),
-            ...ROOMS[neighbor].exits.filter((e) => e.to === room.id && isAdjacentExit(neighbor, e)),
+            ...rooms[neighbor].exits.filter(
+              (e) => e.to === room.id && isAdjacentExit(geometry, neighbor, e),
+            ),
           ]
         : []
 
@@ -199,10 +165,10 @@ export function buildWorld(): World {
     }
 
     for (const exit of room.exits) {
-      if (isAdjacentExit(room.id, exit)) continue
-      const place = PORTAL_PLACES[room.id]?.[exit.dir]
+      if (isAdjacentExit(geometry, room.id, exit)) continue
+      const place = scenario.portalPlaces[room.id]?.[exit.dir]
       if (!place) throw new Error(`転移扉の位置が未定義: ${room.id} ${exit.dir}`)
-      const p = wallPoint(room.id, place.side, place.offset)
+      const p = wallPoint(geometry, room.id, place.side, place.offset)
       const v = SIDE_VECTOR[place.side]
       portals.push({
         room: room.id,
@@ -219,14 +185,14 @@ export function buildWorld(): World {
   const colliders: Box[] = walls
     .filter((w) => w.bottom === 0)
     .map(({ x, z, hx, hz }) => ({ x, z, hx, hz }))
-  for (const room of Object.values(ROOMS)) {
+  for (const room of Object.values(rooms)) {
     for (const h of room.hotspots) {
-      const p = hotspotPosition(room.id, h)
+      const p = hotspotPosition(geometry, room.id, h)
       colliders.push({ x: p.x, z: p.z, hx: PLINTH_SIZE / 2, hz: PLINTH_SIZE / 2 })
     }
   }
 
-  return { walls, doorways, portals, colliders }
+  return { walls, doorways, portals, colliders, layout, cells }
 }
 
 function hits(p: Vec2, boxes: Box[], r: number): boolean {
@@ -247,7 +213,7 @@ export function moveWithCollision(from: Vec2, delta: Vec2, boxes: Box[], r = PLA
 export function portalArrival(world: World, from: RoomId, exit: Exit): { pos: Vec2; yaw: number } {
   const back = world.portals.find((p) => p.room === exit.to && p.exit.to === from)
   if (!back) {
-    const c = roomCenter(exit.to)
+    const c = roomCenter(world, exit.to)
     return { pos: { x: c.x, z: c.z + 1.5 }, yaw: 0 }
   }
   const pos = { x: back.x + back.facing.x * 1.6, z: back.z + back.facing.z * 1.6 }
@@ -261,8 +227,8 @@ export const TRIGGER_DISTANCE = 0.9
  * 階段の扉の前に立っているか。扉は壁に貼り付いているので、
  * 壁の向こう側の部屋から近づいても反応しないよう、扉のある部屋の正面側だけを見る
  */
-export function isAtPortal(portal: Portal, p: Vec2): boolean {
-  if (roomAt(p) !== portal.room) return false
+export function isAtPortal(world: Pick<World, 'cells'>, portal: Portal, p: Vec2): boolean {
+  if (roomAt(world, p) !== portal.room) return false
   const dx = p.x - portal.x
   const dz = p.z - portal.z
   return dx * portal.facing.x + dz * portal.facing.z > 0 && Math.hypot(dx, dz) <= TRIGGER_DISTANCE
@@ -274,7 +240,7 @@ export function yawFacing(v: Vec2): number {
 }
 
 /** 部屋に入ったときの初期位置（南寄りに立ち、北を向く） */
-export function spawnPoint(room: RoomId): { pos: Vec2; yaw: number } {
-  const c = roomCenter(room)
+export function spawnPoint(world: Pick<World, 'layout'>, room: RoomId): { pos: Vec2; yaw: number } {
+  const c = roomCenter(world, room)
   return { pos: { x: c.x, z: c.z + ROOM_SIZE * 0.3 }, yaw: 0 }
 }

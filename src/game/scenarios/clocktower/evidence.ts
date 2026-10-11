@@ -1,4 +1,4 @@
-import type { Evidence, EvidenceId } from './types'
+import type { Evidence, EvidenceId } from '../../types'
 
 export const EVIDENCE: Record<EvidenceId, Evidence> = {
   case: {

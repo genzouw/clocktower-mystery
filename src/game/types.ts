@@ -1,20 +1,12 @@
-export type PuzzleId = 'p1' | 'p2' | 'p3' | 'p4' | 'p5' | 'p6' | 'p7' | 'p8' | 'p9' | 'p10'
+import type { FigureId } from './figures'
 
-export type RoomId =
-  | 'hall'
-  | 'corridor'
-  | 'study'
-  | 'library'
-  | 'music'
-  | 'greenhouse'
-  | 'dining'
-  | 'kitchen'
-  | 'bedroom'
-  | 'cellar'
-  | 'tower'
-
-export type EvidenceId =
-  'case' | 'shoes' | 'safe' | 'lefties' | 'time' | 'marco' | 'koharu' | 'footprint' | 'letter'
+/**
+ * 謎・部屋・証拠の ID は、シナリオごとに定義する文字列。
+ * 参照先が存在することは型ではなく、`scenarios.test.ts` の構造の検証で確かめる
+ */
+export type PuzzleId = string
+export type RoomId = string
+export type EvidenceId = string
 
 export type Direction = 'north' | 'south' | 'east' | 'west' | 'up' | 'down'
 
@@ -56,7 +48,7 @@ interface PuzzleBase {
   /** 問題文。改行区切りで段落になる */
   question: string
   /** 問題文の下に表示する図版 */
-  figure?: 'staff' | 'seats' | 'books' | 'magic' | 'cipher'
+  figure?: FigureId
   hints: string[]
   /** 先に解いておかないと答えられない謎（手がかりの出どころは自動で含まれる） */
   requires?: PuzzleId[]
@@ -91,4 +83,63 @@ export interface Evidence {
   id: EvidenceId
   title: string
   text: string
+}
+
+/** 部屋の壁の向き（東西南北） */
+export type Side = 'north' | 'south' | 'east' | 'west'
+
+/** 階段の転移扉を、部屋のどの壁のどの位置に置くか */
+export type PortalPlaces = Partial<
+  Record<RoomId, Partial<Record<Direction, { side: Side; offset: number }>>>
+>
+
+/** 事件解決時の画面に出す文 */
+export interface Ending {
+  /** 犯人の名前（`suspects` のいずれか） */
+  culprit: string
+  /** 推理のまとめ（箇条書きの各項目） */
+  steps: string[]
+  epilogue: string
+}
+
+/** 探偵ランクの境目。ヒントと誤答の合計がこの値以下なら、その段のランクになる */
+export interface RankThresholds {
+  great: number
+  good: number
+  fair: number
+}
+
+/**
+ * シナリオ 1 つ分のデータ。進行ロジック・3D の世界・画面の部品は、これを引数か props で受け取る。
+ * シナリオに依存する値（部屋・謎の ID、謎の数、犯人など）は、ここ以外に書かない
+ */
+export interface Scenario {
+  /** シナリオの識別子 */
+  id: string
+  /** 一覧などに出す題名 */
+  title: string
+  /** タイトル画面の題名（改行位置ごとの行） */
+  titleLines: string[]
+  titleEmoji: string
+  /** タイトル画面の導入文（行ごと） */
+  lead: string[]
+  /** タイトル画面の遊び方 */
+  howto: string[]
+  startRoom: RoomId
+  /** 最初から手帳にある証拠 */
+  initialEvidence: EvidenceId[]
+  rooms: Record<RoomId, Room>
+  /** 3D 空間での部屋の配置（グリッド座標。北は -z） */
+  layout: Record<RoomId, { gx: number; gz: number }>
+  theme: Record<RoomId, { wall: string; floor: string }>
+  portalPlaces: PortalPlaces
+  puzzles: Record<PuzzleId, Puzzle>
+  /** 謎の並び（手帳の表示順） */
+  puzzleOrder: PuzzleId[]
+  /** 解くと事件が解決する最後の謎 */
+  finalPuzzle: PuzzleId
+  suspects: string[]
+  evidence: Record<EvidenceId, Evidence>
+  ending: Ending
+  rank: RankThresholds
 }
