@@ -1,7 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useReducer, useState } from 'react'
 import './App.css'
-import { hotspotAction, isTitleHidden } from './game/hotspot'
-import { cluesFrom } from './game/scenario'
+import { solveToast, tapOutcome } from './game/hotspot'
 import { SCENARIOS } from './game/scenarios'
 import { puzzleStats } from './game/score'
 import { reducerFor } from './game/state'
@@ -87,30 +86,19 @@ function Game({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) 
 
   const handleHotspot = (_room: RoomId, h: Hotspot) => {
     // concealed の物は、前提を解くまで説明文だけを見せる
-    const action = hotspotAction(scenario, h, state.solved)
-    if (action.kind === 'puzzle') {
-      dispatch({ type: 'open', id: action.id })
-      setOverlay({ kind: 'puzzle', id: action.id })
+    const outcome = tapOutcome(scenario, h, state)
+    if (outcome.kind === 'puzzle') {
+      dispatch({ type: 'open', id: outcome.id })
+      setOverlay({ kind: 'puzzle', id: outcome.id })
       return
     }
-    const isNew = h.evidence !== undefined && !state.evidence.includes(h.evidence)
-    if (h.evidence) dispatch({ type: 'collect', id: h.evidence })
-    setOverlay({ kind: 'look', hotspot: h, newEvidence: isNew ? h.evidence! : null })
+    if (outcome.collect) dispatch({ type: 'collect', id: outcome.collect })
+    setOverlay({ kind: 'look', hotspot: h, newEvidence: outcome.newEvidence })
   }
 
   const handleSolve = (id: PuzzleId) => {
     dispatch({ type: 'solve', id })
-    const reward = scenario.puzzles[id].reward
-    const messages = [
-      reward ? `手帳に「${scenario.evidence[reward].title}」を記録した` : '謎を解いた！',
-      ...cluesFrom(scenario, id).map((p) =>
-        // 目印を伏せるシナリオでは、まだ開いていない謎の題名を出さない
-        isTitleHidden(scenario, state.seen, state.solved, p)
-          ? '別の謎の手がかりを見つけた'
-          : `「${scenario.puzzles[p].title}」の手がかりを見つけた`,
-      ),
-    ]
-    setToast(messages.join('\n'))
+    setToast(solveToast(scenario, id))
   }
 
   if (onTitle) {
@@ -198,6 +186,7 @@ function Game({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) 
           scenario={scenario}
           puzzle={scenario.puzzles[overlay.id]}
           solvedIds={state.solved}
+          seenIds={state.seen}
           hintsUsed={state.hintsUsed[overlay.id] ?? 0}
           mistakes={state.mistakes[overlay.id] ?? 0}
           onSolve={() => handleSolve(overlay.id)}

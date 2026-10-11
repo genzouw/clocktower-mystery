@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { hotspotAction, hotspotAppearance, isTitleHidden, markersOf } from './hotspot'
+import {
+  hotspotAction,
+  hotspotAppearance,
+  isTitleHidden,
+  markersOf,
+  missingTitles,
+  solveToast,
+  tapOutcome,
+} from './hotspot'
+import { cluesFrom } from './scenario'
 import { clocktower } from './scenarios/clocktower'
 import type { Hotspot, Scenario } from './types'
 
@@ -97,5 +106,81 @@ describe('isTitleHidden', () => {
     expect(isTitleHidden(hidden, ['p1'], [], 'p1')).toBe(false)
     expect(isTitleHidden(hidden, [], ['p1'], 'p1')).toBe(false)
     expect(isTitleHidden(visible, [], [], 'p1')).toBe(false)
+  })
+})
+
+describe('missingTitles（手がかり不足の画面の一覧）', () => {
+  const title = clocktower.puzzles.p4.title
+
+  it('visible では、足りない前提の題名をそのまま出す（変更前と同じ）', () => {
+    expect(missingTitles(visible, 'p3', [], [])).toEqual([{ id: 'p4', title }])
+    expect(missingTitles(visible, 'p3', [], ['p4'])).toEqual([])
+  })
+
+  it('hidden では、開いていない前提の題名を「？？？」にする', () => {
+    expect(missingTitles(hidden, 'p3', [], [])).toEqual([{ id: 'p4', title: '？？？' }])
+  })
+
+  it('hidden でも、一度開いた前提の題名は出す', () => {
+    expect(missingTitles(hidden, 'p3', ['p4'], [])).toEqual([{ id: 'p4', title }])
+  })
+})
+
+describe('tapOutcome（物をタップした結果）', () => {
+  const none = { solved: [], evidence: [] }
+
+  it('謎のある物は謎の画面を開く', () => {
+    expect(tapOutcome(visible, open, none)).toEqual({ kind: 'puzzle', id: 'p1' })
+  })
+
+  it('謎の無い物は説明を見せ、証拠があれば初回だけ新規として返す', () => {
+    const h = { evidence: 'shoes' as const }
+    expect(tapOutcome(visible, h, none)).toEqual({
+      kind: 'look',
+      collect: 'shoes',
+      newEvidence: 'shoes',
+    })
+    expect(tapOutcome(visible, h, { solved: [], evidence: ['shoes'] })).toEqual({
+      kind: 'look',
+      collect: 'shoes',
+      newEvidence: null,
+    })
+    expect(tapOutcome(visible, plain, none)).toEqual({
+      kind: 'look',
+      collect: null,
+      newEvidence: null,
+    })
+  })
+
+  it('前提が未解決の concealed の物は、謎の証拠を持っていても説明だけを見せる', () => {
+    expect(tapOutcome(hidden, concealed, none).kind).toBe('look')
+    expect(tapOutcome(hidden, concealed, { solved: ['p4'], evidence: [] })).toEqual({
+      kind: 'puzzle',
+      id: 'p3',
+    })
+  })
+})
+
+describe('solveToast', () => {
+  // 手がかりを渡す謎を探す
+  const giver = clocktower.puzzleOrder.find((id) => cluesFrom(clocktower, id).length > 0)!
+  const receiver = cluesFrom(clocktower, giver)[0]
+
+  it('visible では、手がかりを得た謎の題名を出す（変更前と同じ）', () => {
+    expect(solveToast(visible, giver)).toContain(
+      `「${clocktower.puzzles[receiver].title}」の手がかりを見つけた`,
+    )
+  })
+
+  it('hidden では、題名も手がかりの内容も出さず、中立の文にする', () => {
+    const text = solveToast(hidden, giver)
+    expect(text).toContain('手がかりを見つけた。手帳に記録した')
+    expect(text).not.toContain(clocktower.puzzles[receiver].title)
+    expect(text).not.toContain('別の謎')
+  })
+
+  it('hidden でも、手がかりを渡さない謎は中立の文も出さない', () => {
+    const last = clocktower.puzzleOrder.find((id) => cluesFrom(clocktower, id).length === 0)!
+    expect(solveToast(hidden, last)).not.toContain('手がかり')
   })
 })

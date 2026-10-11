@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { isCorrect } from '../game/answer'
-import { prerequisites } from '../game/scenario'
+import { missingTitles } from '../game/hotspot'
 import type { Puzzle, PuzzleId, Scenario } from '../game/types'
 import { Figure } from './Figure'
 
@@ -9,6 +9,8 @@ interface Props {
   puzzle: Puzzle
   /** これまでに解いた謎（手がかりがそろっているかの判定に使う） */
   solvedIds: PuzzleId[]
+  /** 一度でも開いた謎（hidden のシナリオで題名を伏せる判定に使う） */
+  seenIds: PuzzleId[]
   hintsUsed: number
   mistakes: number
   onSolve: () => void
@@ -23,6 +25,7 @@ export function PuzzleModal({
   scenario,
   puzzle,
   solvedIds,
+  seenIds,
   hintsUsed,
   mistakes,
   onSolve,
@@ -33,7 +36,7 @@ export function PuzzleModal({
   const [input, setInput] = useState('')
   const [wrong, setWrong] = useState(false)
   const solved = solvedIds.includes(puzzle.id)
-  const missing = prerequisites(scenario, puzzle.id).filter((id) => !solvedIds.includes(id))
+  const missing = missingTitles(scenario, puzzle.id, seenIds, solvedIds)
   const answerable = missing.length === 0
 
   const submit = (value: string) => {
@@ -107,8 +110,8 @@ export function PuzzleModal({
             <p className="locked-title">🔒 まだ答えられない</p>
             <p>手がかりが足りない。先に次の謎を解こう。</p>
             <ul>
-              {missing.map((id) => (
-                <li key={id}>{scenario.puzzles[id].title}</li>
+              {missing.map((m) => (
+                <li key={m.id}>{m.title}</li>
               ))}
             </ul>
           </div>

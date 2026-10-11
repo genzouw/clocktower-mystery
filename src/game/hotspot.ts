@@ -1,5 +1,5 @@
-import { isUnlocked } from './scenario'
-import type { Hotspot, HotspotMarkers, PuzzleId, Scenario } from './types'
+import { cluesFrom, isUnlocked, prerequisites } from './scenario'
+import type { EvidenceId, Hotspot, HotspotMarkers, PuzzleId, Scenario } from './types'
 
 /** 目印の出し方。省略したシナリオは、従来どおり visible */
 export function markersOf(scenario: Pick<Scenario, 'hotspotMarkers'>): HotspotMarkers {
@@ -77,4 +77,58 @@ export function isTitleHidden(
   id: PuzzleId,
 ): boolean {
   return markersOf(scenario) === 'hidden' && !seen.includes(id) && !solved.includes(id)
+}
+
+/** 物をタップした結果。App はこの値に従って画面を切り替える */
+export type TapOutcome =
+  | { kind: 'puzzle'; id: PuzzleId }
+  | {
+      kind: 'look'
+      /** 手帳に記録する証拠（無ければ null）。すでに記録済みでも返す */
+      collect: EvidenceId | null
+      /** この説明で初めて記録する証拠（無ければ null） */
+      newEvidence: EvidenceId | null
+    }
+
+export function tapOutcome(
+  scenario: Scenario,
+  hotspot: Pick<Hotspot, 'puzzle' | 'concealed' | 'evidence'>,
+  state: { solved: PuzzleId[]; evidence: EvidenceId[] },
+): TapOutcome {
+  const action = hotspotAction(scenario, hotspot, state.solved)
+  if (action.kind === 'puzzle') return action
+  const evidence = hotspot.evidence ?? null
+  return {
+    kind: 'look',
+    collect: evidence,
+    newEvidence: evidence !== null && !state.evidence.includes(evidence) ? evidence : null,
+  }
+}
+
+/** 謎を解いたときのトースト。hidden では手がかりの内容も題名も出さず、中立の文にする */
+export function solveToast(scenario: Scenario, id: PuzzleId): string {
+  const reward = scenario.puzzles[id].reward
+  const lines = [reward ? `手帳に「${scenario.evidence[reward].title}」を記録した` : '謎を解いた！']
+  const next = cluesFrom(scenario, id)
+  if (markersOf(scenario) === 'hidden') {
+    if (next.length > 0) lines.push('手がかりを見つけた。手帳に記録した')
+  } else {
+    lines.push(...next.map((p) => `「${scenario.puzzles[p].title}」の手がかりを見つけた`))
+  }
+  return lines.join('\n')
+}
+
+/** 手がかり不足の謎の画面に並べる、足りない前提の謎の題名。未発見の謎は伏せる */
+export function missingTitles(
+  scenario: Scenario,
+  id: PuzzleId,
+  seen: PuzzleId[],
+  solved: PuzzleId[],
+): { id: PuzzleId; title: string }[] {
+  return prerequisites(scenario, id)
+    .filter((p) => !solved.includes(p))
+    .map((p) => ({
+      id: p,
+      title: isTitleHidden(scenario, seen, solved, p) ? '？？？' : scenario.puzzles[p].title,
+    }))
 }

@@ -1,3 +1,4 @@
+import { statusView } from '../game/score'
 import type { PuzzleStat, ScoreTotals } from '../game/score'
 
 /** 合計値を大きく見せるタイル */
@@ -36,9 +37,6 @@ export function ScoreSummary({
   )
 }
 
-const statusLabel = (s: PuzzleStat) =>
-  s.solved ? '解決済み' : s.locked ? '手がかり不足' : '挑戦できる'
-
 /** 謎ごとのヒント使用数・誤答数の内訳 */
 export function ScoreTable({ stats }: { stats: PuzzleStat[] }) {
   return (
@@ -55,21 +53,24 @@ export function ScoreTable({ stats }: { stats: PuzzleStat[] }) {
         </tr>
       </thead>
       <tbody>
-        {stats.map((s) => (
-          <tr key={s.id} className={s.solved ? 'done' : 'pending'}>
-            <th scope="row">
-              <span className="status" aria-label={statusLabel(s)} title={statusLabel(s)}>
-                {s.solved ? '✔' : s.locked ? '🔒' : '・'}
-              </span>
-              <span className="puzzle-number">{s.number}</span>
-              <span className="puzzle-name">{s.name}</span>
-            </th>
-            <td className={`num ${s.hints > 0 ? 'used' : ''}`}>
-              {s.hints}/{s.hintsMax}
-            </td>
-            <td className={`num ${s.mistakes > 0 ? 'used' : ''}`}>{s.mistakes}</td>
-          </tr>
-        ))}
+        {stats.map((s) => {
+          const status = statusView(s)
+          return (
+            <tr key={s.id} className={s.solved ? 'done' : 'pending'}>
+              <th scope="row">
+                <span className="status" aria-label={status.label} title={status.label}>
+                  {status.mark}
+                </span>
+                <span className="puzzle-number">{s.number}</span>
+                <span className="puzzle-name">{s.name}</span>
+              </th>
+              <td className={`num ${s.hints > 0 ? 'used' : ''}`}>
+                {s.hints}/{s.hintsMax}
+              </td>
+              <td className={`num ${s.mistakes > 0 ? 'used' : ''}`}>{s.mistakes}</td>
+            </tr>
+          )
+        })}
       </tbody>
     </table>
   )
