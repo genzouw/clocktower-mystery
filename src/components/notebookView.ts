@@ -29,7 +29,7 @@ export function floorLinks(rooms: Room[], floor: string): [RoomId, RoomId][] {
   for (const r of onFloor.values()) {
     for (const exit of r.exits) {
       if (!onFloor.has(exit.to)) continue
-      const key = [r.id, exit.to].sort().join('\u0000')
+      const key = r.id < exit.to ? `${r.id}\u0000${exit.to}` : `${exit.to}\u0000${r.id}`
       if (seen.has(key)) continue
       seen.add(key)
       links.push([r.id, exit.to])

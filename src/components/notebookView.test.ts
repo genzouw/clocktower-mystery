@@ -18,7 +18,7 @@ describe('手帳と見取り図の純粋関数', () => {
   it('扉の線は、同じ階の部屋の組を向きによらず 1 本にする', () => {
     const rooms = Object.values(observatory.rooms)
     const links = floorLinks(rooms, '1F')
-    const keys = links.map((l) => [...l].sort().join('-'))
+    const keys = links.map((l) => (l[0] < l[1] ? `${l[0]}-${l[1]}` : `${l[1]}-${l[0]}`))
     expect(new Set(keys).size).toBe(keys.length)
     expect(keys).toContain('corridor-entrance')
     expect(keys).toContain('corridor-lounge')

@@ -1,6 +1,7 @@
 import { useEffect, useId, useRef } from 'react'
 import type { ReactNode } from 'react'
 import { shouldCloseOnBackdropClick } from './puzzleInput'
+import { FOCUSABLE } from './dialogFocus'
 import './Dialog.css'
 
 interface Props {
@@ -16,9 +17,6 @@ interface Props {
   /** 外側のパネルへ足すクラス名（画面ごとの見た目の調整用） */
   className?: string
 }
-
-const FOCUSABLE =
-  'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])'
 
 // 重なって開いたときも、最後の 1 つが閉じるまで背景のスクロールを止めておく
 let scrollLocks = 0
