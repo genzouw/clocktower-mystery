@@ -1,7 +1,15 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'
 import { AdditiveBlending, Vector3 } from 'three'
-import type { Group, Mesh, MeshBasicMaterial, PointLight, Sprite, SpriteMaterial } from 'three'
+import type {
+  Group,
+  Mesh,
+  MeshBasicMaterial,
+  PerspectiveCamera,
+  PointLight,
+  Sprite,
+  SpriteMaterial,
+} from 'three'
 import { hotspotAppearance, type HotspotAppearance } from '../game/hotspot'
 import type { Hotspot, PuzzleId, RoomId, Scenario } from '../game/types'
 import {
@@ -20,11 +28,20 @@ import {
 } from '../game/world'
 import { Joystick } from './Joystick'
 import { PlayerRig } from './playerRig'
-import { labelDistanceScale, labelPixelRatio, reachEmphasis } from './labelStyle'
+import {
+  LABEL_EMPHASIS_MAX_SCALE,
+  labelDistanceScale,
+  labelMaxScale,
+  labelPixelRatio,
+  reachEmphasis,
+} from './labelStyle'
 import { emojiTexture, glowTexture, labelTexture } from './textures'
 
 /** 名札の距離の計算に使う作業用ベクトル */
 const worldPoint = new Vector3()
+/** 名札の幅の上限（カメラ前方向の奥行き）の計算に使う作業用ベクトル */
+const cameraForward = new Vector3()
+const cameraToPoint = new Vector3()
 
 const EYE_HEIGHT = 1.6
 const WALK_SPEED = 2.6
@@ -278,14 +295,28 @@ function Label({
     undefined,
     labelPixelRatio(window.devicePixelRatio),
   )
-  // 近いと小さく、遠いと大きく出して、画面上の大きさが極端に変わらないようにする
+  // 近いと小さく、遠いと大きく出して、画面上の大きさが極端に変わらないようにする。
+  // 長い名札は近距離で画面幅を超えるため、画面幅の約 90% で頭打ちにする
   const scaler = useRef<Group>(null)
   const camera = useThree((s) => s.camera)
+  const viewport = useThree((s) => s.size)
   useFrame(() => {
     const g = scaler.current
     if (!g) return
     g.getWorldPosition(worldPoint)
-    g.scale.setScalar(labelDistanceScale(camera.position.distanceTo(worldPoint)))
+    const distance = camera.position.distanceTo(worldPoint)
+    // 画面上の幅を決めるのは視点からの直線距離ではなく、カメラ前方向の奥行き。
+    // 視軸から外れた名札ほど直線距離のままでは上限が緩むため、前方向へ射影する。
+    // 奥行きが 0 以下（カメラの後ろ）のときは labelMaxScale が制限しない（Infinity）
+    camera.getWorldDirection(cameraForward)
+    const depth = cameraToPoint.copy(worldPoint).sub(camera.position).dot(cameraForward)
+    const fit = labelMaxScale(
+      height * aspect,
+      depth,
+      (camera as PerspectiveCamera).fov,
+      viewport.width / viewport.height,
+    )
+    g.scale.setScalar(Math.min(labelDistanceScale(distance), fit))
   })
   return (
     <group ref={groupRef} position={position}>
@@ -457,7 +488,7 @@ function HotspotObject({
     if (reachMaterial.current) reachMaterial.current.opacity = e * 0.85
     if (glow.current) glow.current.visible = e > 0
     if (glowMaterial.current) glowMaterial.current.opacity = e * 0.8
-    labelGroup.current?.scale.setScalar(1 + e * 0.12)
+    labelGroup.current?.scale.setScalar(1 + e * (LABEL_EMPHASIS_MAX_SCALE - 1))
   })
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {

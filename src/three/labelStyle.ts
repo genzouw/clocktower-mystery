@@ -22,6 +22,7 @@ export const REACH_FADE_BAND = 0.7
  * 謎の有無には依存しない。同じ距離にある物は、どの物も同じ度合いになる
  */
 export function reachEmphasis(distance: number, reach: number, fadeBand = REACH_FADE_BAND): number {
+  if (!Number.isFinite(distance) || !Number.isFinite(reach)) return 0
   if (distance <= reach) return 1
   if (distance >= reach + fadeBand) return 0
   return 1 - (distance - reach) / fadeBand
@@ -39,5 +40,36 @@ export const LABEL_DISTANCE_SCALE_RANGE = { min: 0.55, max: 1.35 } as const
  */
 export function labelDistanceScale(distance: number): number {
   const { min, max } = LABEL_DISTANCE_SCALE_RANGE
+  if (!Number.isFinite(distance)) return 1
   return Math.min(max, Math.max(min, distance / LABEL_REFERENCE_DISTANCE))
+}
+
+/** 名札の幅が画面幅に占める割合の上限。両端が切れないように、少し余白を残す */
+export const LABEL_MAX_SCREEN_FRACTION = 0.9
+/** 近づいた物の名札を強調で拡大する最大の倍率（World3D の強調と揃える） */
+export const LABEL_EMPHASIS_MAX_SCALE = 1.12
+
+/**
+ * 名札の幅（ワールド座標。倍率 1 のとき）が、画面幅の約 90% に収まる倍率の上限。
+ * 距離による倍率（labelDistanceScale）は文字数を考慮しないため、長い名札は近距離で画面幅を超える。
+ * 強調で拡大する分（LABEL_EMPHASIS_MAX_SCALE）も見込んで、強調時にも 90% を超えないようにする。
+ * 引数が不正なときは制限しない（Infinity を返す）
+ *
+ * @param labelWidth 名札の幅（ワールド座標）
+ * @param distance カメラ前方向の奥行き（視点から名札までのベクトルを視軸へ射影した長さ。直線距離ではない）
+ * @param fovDegrees カメラの縦方向の視野角（度）
+ * @param aspect 画面の幅 / 高さ
+ */
+export function labelMaxScale(
+  labelWidth: number,
+  distance: number,
+  fovDegrees: number,
+  aspect: number,
+): number {
+  if (![labelWidth, distance, fovDegrees, aspect].every(Number.isFinite)) return Infinity
+  if (labelWidth <= 0 || distance <= 0 || fovDegrees <= 0 || fovDegrees >= 180 || aspect <= 0) {
+    return Infinity
+  }
+  const visibleWidth = 2 * distance * Math.tan((fovDegrees * Math.PI) / 360) * aspect
+  return (visibleWidth * LABEL_MAX_SCREEN_FRACTION) / (labelWidth * LABEL_EMPHASIS_MAX_SCALE)
 }
