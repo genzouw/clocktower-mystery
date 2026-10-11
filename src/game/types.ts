@@ -118,6 +118,8 @@ export interface Scenario {
   id: string
   /** 一覧などに出す題名 */
   title: string
+  /** 一覧に星の数で出す難易度の目安 */
+  difficulty: 1 | 2 | 3
   /** タイトル画面の題名（改行位置ごとの行） */
   titleLines: string[]
   titleEmoji: string

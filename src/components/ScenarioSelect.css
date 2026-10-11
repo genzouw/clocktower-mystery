@@ -1,0 +1,86 @@
+.scenario-select {
+  padding: 40px 20px 32px;
+}
+.scenario-select h1 {
+  text-align: center;
+  font-size: 1.6rem;
+}
+.scenario-select-lead {
+  text-align: center;
+  color: var(--muted);
+}
+.scenario-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.scenario-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  transition:
+    transform 0.08s,
+    border-color 0.2s;
+}
+.scenario-card:active {
+  transform: scale(0.98);
+}
+.scenario-card.status-playing {
+  border-color: var(--accent);
+}
+.scenario-card.status-cleared {
+  border-color: var(--ok);
+}
+.scenario-emoji {
+  font-size: 1.9rem;
+  flex: none;
+}
+.scenario-body {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.scenario-title {
+  font-weight: bold;
+  font-size: 1.05rem;
+  line-height: 1.4;
+}
+.scenario-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.scenario-stars .on {
+  color: var(--accent);
+}
+.scenario-stars .off {
+  color: var(--line);
+}
+.scenario-last {
+  font-size: 0.75rem;
+  color: var(--muted);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0 8px;
+}
+.scenario-status {
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+.status-playing .scenario-status {
+  color: var(--accent);
+}
+.status-cleared .scenario-status {
+  color: var(--ok);
+}

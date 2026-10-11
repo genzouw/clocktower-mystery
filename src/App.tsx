@@ -3,11 +3,20 @@ import './App.css'
 import { cluesFrom } from './game/scenario'
 import { SCENARIOS } from './game/scenarios'
 import { puzzleStats } from './game/score'
-import { loadState, reducerFor, saveState } from './game/state'
+import { reducerFor } from './game/state'
+import {
+  hasProgress,
+  loadCurrent,
+  loadState,
+  saveCurrent,
+  saveState,
+  scenarioStatus,
+} from './game/storage'
 import type { EvidenceId, Hotspot, PuzzleId, RoomId, Scenario } from './game/types'
 import { buildWorld } from './game/world'
 import { MapView, Modal, Notebook } from './components/Panels'
 import { PuzzleModal } from './components/PuzzleModal'
+import { ScenarioSelect } from './components/ScenarioSelect'
 import { EndingScreen, TitleScreen } from './components/Screens'
 
 // three.js は大きいので、タイトル画面を先に表示できるよう 3D 部分は後から読み込む
@@ -20,22 +29,52 @@ type Overlay =
   | { kind: 'map' }
   | null
 
-export default function App() {
-  // シナリオ選択画面ができるまでは、先頭のシナリオだけを遊ぶ
-  const scenario = SCENARIOS[0]
-  return <Game key={scenario.id} scenario={scenario} />
+export default function App({ scenarios = SCENARIOS }: { scenarios?: Scenario[] }) {
+  // 起動するとシナリオの一覧を出す。選んだシナリオだけを遊ぶ
+  const [selected, setSelected] = useState<Scenario | null>(null)
+
+  const select = (scenario: Scenario) => {
+    saveCurrent(scenario.id)
+    setSelected(scenario)
+  }
+
+  if (!selected) return <SelectView scenarios={scenarios} onSelect={select} />
+  return <Game key={selected.id} scenario={selected} onExit={() => setSelected(null)} />
 }
 
-/** 1 つのシナリオを遊ぶ。シナリオを切り替えるときは key を変えて、状態と 3D の世界を作り直す */
-function Game({ scenario }: { scenario: Scenario }) {
+/** 一覧を開くたびに、保存済みの進行から各シナリオの状態を読み直す */
+function SelectView({
+  scenarios,
+  onSelect,
+}: {
+  scenarios: Scenario[]
+  onSelect: (scenario: Scenario) => void
+}) {
+  const [entries] = useState(() =>
+    scenarios.map((scenario) => ({
+      scenario,
+      status: scenarioStatus(scenario, loadState(scenario)),
+    })),
+  )
+  const [currentId] = useState(() => loadCurrent(scenarios))
+  return <ScenarioSelect entries={entries} currentId={currentId} onSelect={onSelect} />
+}
+
+/**
+ * 1 つのシナリオを遊ぶ。シナリオを切り替えるときは key を変えて、状態と 3D の世界を作り直す。
+ * onExit でシナリオの一覧へ戻る（進行は保存されたまま残る）
+ */
+function Game({ scenario, onExit }: { scenario: Scenario; onExit: () => void }) {
   const reducer = useMemo(() => reducerFor(scenario), [scenario])
   const world = useMemo(() => buildWorld(scenario), [scenario])
   const [state, dispatch] = useReducer(reducer, scenario, loadState)
   const [overlay, setOverlay] = useState<Overlay>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [showGuide, setShowGuide] = useState(true)
+  // 一覧から選んだら、進行があってもまずシナリオのタイトル画面を出す
+  const [onTitle, setOnTitle] = useState(true)
 
-  useEffect(() => saveState(state), [state])
+  useEffect(() => saveState(scenario, state), [scenario, state])
 
   useEffect(() => {
     if (!toast) return
@@ -65,15 +104,20 @@ function Game({ scenario }: { scenario: Scenario }) {
     setToast(messages.join('\n'))
   }
 
-  const hasProgress = state.solved.length > 0 || state.visited.length > 1
-
-  if (!state.started) {
+  if (onTitle) {
     return (
       <TitleScreen
         scenario={scenario}
-        hasProgress={hasProgress}
-        onStart={() => dispatch({ type: 'start' })}
-        onReset={() => dispatch({ type: 'reset' })}
+        hasProgress={hasProgress(state)}
+        onStart={() => {
+          dispatch({ type: 'start' })
+          setOnTitle(false)
+        }}
+        onReset={() => {
+          dispatch({ type: 'reset' })
+          setOnTitle(false)
+        }}
+        onBack={onExit}
       />
     )
   }
@@ -84,6 +128,7 @@ function Game({ scenario }: { scenario: Scenario }) {
         scenario={scenario}
         stats={puzzleStats(scenario, state)}
         onRestart={() => dispatch({ type: 'reset' })}
+        onBack={onExit}
       />
     )
   }
@@ -130,6 +175,9 @@ function Game({ scenario }: { scenario: Scenario }) {
         </button>
         <button className="btn tool" onClick={() => setOverlay({ kind: 'map' })}>
           🗺️ 見取り図
+        </button>
+        <button className="btn tool" onClick={onExit}>
+          📁 メニュー
         </button>
       </footer>
 

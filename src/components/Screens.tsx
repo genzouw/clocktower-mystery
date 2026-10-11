@@ -1,19 +1,24 @@
-import { Fragment } from 'react'
+import { Fragment, useState } from 'react'
 import { detectiveRank, totals, type PuzzleStat } from '../game/score'
 import type { Scenario } from '../game/types'
 import { ScoreSummary, ScoreTable } from './ScoreTable'
+import './Screens.css'
 
 export function TitleScreen({
   scenario,
   hasProgress,
   onStart,
   onReset,
+  onBack,
 }: {
   scenario: Scenario
   hasProgress: boolean
   onStart: () => void
   onReset: () => void
+  /** シナリオの一覧へ戻る */
+  onBack: () => void
 }) {
+  const [confirmingReset, setConfirmingReset] = useState(false)
   return (
     <div className="screen title-screen">
       <div className="title-emoji">{scenario.titleEmoji}</div>
@@ -36,11 +41,25 @@ export function TitleScreen({
       <button className="btn primary big" onClick={onStart}>
         {hasProgress ? 'つづきから' : '館に入る'}
       </button>
-      {hasProgress && (
-        <button className="btn ghost" onClick={onReset}>
+      {hasProgress && !confirmingReset && (
+        <button className="btn ghost" onClick={() => setConfirmingReset(true)}>
           はじめから
         </button>
       )}
+      {confirmingReset && (
+        <div className="reset-confirm" role="alertdialog" aria-label="はじめからの確認">
+          <p>この事件の進行を消して、最初から始めます。よろしいですか？</p>
+          <button className="btn danger" onClick={onReset}>
+            進行を消して始める
+          </button>
+          <button className="btn ghost" onClick={() => setConfirmingReset(false)}>
+            やめる
+          </button>
+        </div>
+      )}
+      <button className="btn ghost" onClick={onBack}>
+        事件ファイルへ戻る
+      </button>
       <div className="howto">
         <h3>遊び方</h3>
         <ul>
@@ -57,10 +76,13 @@ export function EndingScreen({
   scenario,
   stats,
   onRestart,
+  onBack,
 }: {
   scenario: Scenario
   stats: PuzzleStat[]
   onRestart: () => void
+  /** シナリオの一覧へ戻る */
+  onBack: () => void
 }) {
   const sum = totals(stats)
   const rank = detectiveRank(scenario, sum)
@@ -93,6 +115,9 @@ export function EndingScreen({
       </section>
       <button className="btn primary big" onClick={onRestart}>
         もう一度遊ぶ
+      </button>
+      <button className="btn ghost" onClick={onBack}>
+        事件ファイルへ戻る
       </button>
     </div>
   )
