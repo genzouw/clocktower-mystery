@@ -1,0 +1,65 @@
+/*
+ * 手帳（Panels.tsx の Notebook）と、切り替えの見出し（階の切り替えにも使う）のスタイル。
+ * 色・文字・余白はトークン（index.css）を参照する。
+ */
+
+.tabs {
+  display: flex;
+  gap: var(--sp-1);
+  margin-top: var(--sp-2);
+  padding: var(--sp-1);
+  overflow-x: auto;
+  background: var(--bg-deep);
+  border-radius: var(--r-md);
+}
+
+.tab {
+  flex: 1 0 auto;
+  min-height: var(--tap);
+  padding: 0 var(--sp-3);
+  border: none;
+  border-radius: var(--r-sm);
+  background: none;
+  color: var(--muted);
+  font-family: var(--font-sans);
+  font-size: var(--fs-sm);
+  cursor: pointer;
+  transition:
+    background var(--dur) var(--ease),
+    color var(--dur) var(--ease);
+}
+.tab.active {
+  background: var(--panel-3);
+  color: var(--accent);
+  font-weight: bold;
+}
+.tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.notebook .score-summary {
+  margin-top: 0;
+}
+
+.notebook .empty,
+.notebook .people-note {
+  color: var(--muted);
+  font-size: var(--fs-sm);
+}
+
+.people-list {
+  list-style: none;
+  margin: var(--sp-2) 0 0;
+  padding: 0;
+  display: grid;
+  gap: var(--sp-2);
+}
+.people-list li {
+  background: var(--panel-2);
+  padding: var(--sp-3) var(--sp-3h);
+  border-radius: var(--r-ms);
+  min-height: var(--tap);
+  display: flex;
+  align-items: center;
+}
