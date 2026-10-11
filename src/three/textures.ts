@@ -41,27 +41,56 @@ export function emojiTexture(emoji: string): SpriteTexture {
   })
 }
 
-/** 角丸の札に文字を書いたテクスチャ（看板・名札用） */
+/**
+ * 角丸の札に文字を書いたテクスチャ（看板・名札用）。
+ * 縁取りを付けて、明るい壁や床の前でも読めるようにする。
+ * pixelRatio は端末の画素密度（labelPixelRatio で上限を掛けた値）。
+ * 画面上の大きさは aspect とスプライトの scale で決まるため、解像度だけが変わる
+ */
 export function labelTexture(
   text: string,
   color = '#f1e9dc',
-  bg = 'rgba(0,0,0,0.6)',
+  bg = 'rgba(0,0,0,0.72)',
+  pixelRatio = 1,
 ): SpriteTexture {
-  const fontSize = 40
+  const fontSize = Math.round(40 * pixelRatio)
   const font = `bold ${fontSize}px ${TEXT_FONT}`
   const measure = document.createElement('canvas').getContext('2d')!
   measure.font = font
   const w = Math.ceil(measure.measureText(text).width + fontSize)
   const h = Math.ceil(fontSize * 1.6)
-  return makeTexture(`label:${text}:${color}:${bg}`, w, h, (ctx) => {
-    ctx.fillStyle = bg
+  const border = Math.max(1, Math.round(fontSize * 0.04))
+  return makeTexture(`label:${text}:${color}:${bg}:${fontSize}`, w, h, (ctx) => {
     ctx.beginPath()
-    ctx.roundRect(0, 0, w, h, h / 2)
+    ctx.roundRect(border / 2, border / 2, w - border, h - border, h / 2)
+    ctx.fillStyle = bg
     ctx.fill()
+    // 明るい壁の前でも札の輪郭が分かるように、薄い縁を付ける
+    ctx.lineWidth = border
+    ctx.strokeStyle = 'rgba(255,244,214,0.55)'
+    ctx.stroke()
     ctx.font = font
-    ctx.fillStyle = color
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
-    ctx.fillText(text, w / 2, h / 2 + 2)
+    // 文字の縁取り（暗色）。塗りより先に描く
+    ctx.lineJoin = 'round'
+    ctx.lineWidth = fontSize * 0.16
+    ctx.strokeStyle = '#120a08'
+    ctx.strokeText(text, w / 2, h / 2 + 2 * pixelRatio)
+    ctx.fillStyle = color
+    ctx.fillText(text, w / 2, h / 2 + 2 * pixelRatio)
+  })
+}
+
+/** 近づいた物の背後に敷く、やわらかい光のテクスチャ（強調用。物の種類に依存しない） */
+export function glowTexture(): SpriteTexture {
+  const size = 128
+  return makeTexture('glow', size, size, (ctx) => {
+    const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2)
+    g.addColorStop(0, 'rgba(255,241,201,0.95)')
+    g.addColorStop(0.45, 'rgba(255,226,160,0.45)')
+    g.addColorStop(1, 'rgba(255,226,160,0)')
+    ctx.fillStyle = g
+    ctx.fillRect(0, 0, size, size)
   })
 }
