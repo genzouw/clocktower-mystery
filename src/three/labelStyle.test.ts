@@ -5,6 +5,7 @@ import {
   LABEL_MAX_SCREEN_FRACTION,
   LABEL_PIXEL_RATIO_MAX,
   LABEL_REFERENCE_DISTANCE,
+  labelDepth,
   labelDistanceScale,
   labelMaxScale,
   labelPixelRatio,
@@ -97,5 +98,27 @@ describe('labelMaxScale', () => {
     expect(labelMaxScale(3, 0, fov, aspect)).toBe(Number.POSITIVE_INFINITY)
     expect(labelMaxScale(3, 2, fov, 0)).toBe(Number.POSITIVE_INFINITY)
     expect(labelMaxScale(3, 2, 180, aspect)).toBe(Number.POSITIVE_INFINITY)
+  })
+})
+
+describe('labelDepth', () => {
+  const eye = { x: 1, y: 1.6, z: 1 }
+  const forward = { x: 0, y: 0, z: -1 }
+
+  it('正面にある名札は、直線距離と同じ奥行きになる', () => {
+    expect(labelDepth(eye, forward, { x: 1, y: 1.6, z: -2 })).toBeCloseTo(3)
+  })
+
+  it('視軸から外れた名札は、直線距離より短い奥行きになる', () => {
+    const point = { x: 1, y: 2.55, z: 0 }
+    const straight = Math.hypot(point.x - eye.x, point.y - eye.y, point.z - eye.z)
+    expect(labelDepth(eye, forward, point)).toBeCloseTo(1)
+    expect(labelDepth(eye, forward, point)).toBeLessThan(straight)
+  })
+
+  it('カメラの後ろの名札は 0 以下になり、labelMaxScale が制限しない', () => {
+    const depth = labelDepth(eye, forward, { x: 1, y: 1.6, z: 3 })
+    expect(depth).toBeLessThanOrEqual(0)
+    expect(labelMaxScale(3, depth, 70, 0.46)).toBe(Number.POSITIVE_INFINITY)
   })
 })

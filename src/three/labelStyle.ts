@@ -73,3 +73,18 @@ export function labelMaxScale(
   const visibleWidth = 2 * distance * Math.tan((fovDegrees * Math.PI) / 360) * aspect
   return (visibleWidth * LABEL_MAX_SCREEN_FRACTION) / (labelWidth * LABEL_EMPHASIS_MAX_SCALE)
 }
+
+/**
+ * 視点から名札までのカメラ前方向の奥行き（視点から名札へのベクトルを視軸へ射影した長さ）。
+ * 画面上の幅を決めるのは直線距離ではなくこの奥行きで、視軸から外れた名札ほど直線距離は奥行きより長い。
+ * カメラの後ろにある名札は 0 以下になる。forward は単位ベクトルであること
+ */
+export function labelDepth(
+  eye: { x: number; y: number; z: number },
+  forward: { x: number; y: number; z: number },
+  point: { x: number; y: number; z: number },
+): number {
+  return (
+    (point.x - eye.x) * forward.x + (point.y - eye.y) * forward.y + (point.z - eye.z) * forward.z
+  )
+}
