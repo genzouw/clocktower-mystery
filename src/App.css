@@ -25,16 +25,6 @@
     transform: translateY(40px);
   }
 }
-@keyframes shake {
-  20%,
-  60% {
-    transform: translateX(-8px);
-  }
-  40%,
-  80% {
-    transform: translateX(8px);
-  }
-}
 
 /* ---------- ボタン ---------- */
 .btn {
@@ -195,177 +185,7 @@
   font-size: var(--fs-sm);
 }
 
-/* ---------- モーダル ---------- */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: var(--scrim);
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  z-index: 10;
-  animation: fade-in var(--dur) var(--ease);
-}
-.modal {
-  position: relative;
-  width: 100%;
-  max-width: 480px;
-  max-height: 88dvh;
-  overflow-y: auto;
-  background: linear-gradient(180deg, var(--panel-top), var(--panel) 120px);
-  border-radius: var(--r-lg) var(--r-lg) 0 0;
-  box-shadow: var(--shadow-3), var(--highlight);
-  padding: var(--sp-5) var(--sp-4) calc(var(--sp-5) + env(safe-area-inset-bottom));
-  animation: slide-up var(--dur) var(--ease);
-}
-.modal h2 {
-  padding-right: calc(var(--tap) + var(--sp-2));
-  font-size: var(--fs-lg);
-  color: var(--accent);
-}
-.modal h3 {
-  font-size: var(--fs-md);
-  margin-top: var(--sp-4);
-}
-.modal-close {
-  position: absolute;
-  right: var(--sp-2);
-  top: var(--sp-2);
-  width: var(--tap);
-  height: var(--tap);
-  display: grid;
-  place-items: center;
-  border: none;
-  border-radius: var(--r-pill);
-  background: none;
-  font-size: var(--fs-xl);
-  line-height: 1;
-  cursor: pointer;
-  transition: background var(--dur) var(--ease);
-}
-.modal-close:active {
-  background: var(--accent-soft);
-}
-.shake {
-  animation: shake 0.4s var(--ease);
-}
-
-.question p {
-  margin-bottom: var(--sp-1h);
-  letter-spacing: 0.04em;
-}
-
-/* 数字錠 */
-.code-slots {
-  display: flex;
-  justify-content: center;
-  gap: var(--sp-2h);
-  margin: var(--sp-4) 0;
-}
-.code-slot {
-  width: 48px;
-  height: 58px;
-  border: 2px solid var(--accent);
-  border-radius: var(--r-ms);
-  display: grid;
-  place-items: center;
-  font-size: var(--fs-xl);
-  font-family: var(--font-mono);
-  background: var(--bg-deep);
-  box-shadow: var(--shadow-inset);
-}
-.keypad {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: var(--sp-2);
-  max-width: 300px;
-  margin: 0 auto;
-}
-.key {
-  height: 54px;
-  border-radius: var(--r-md);
-  border: 1px solid var(--line);
-  background: linear-gradient(180deg, var(--panel-3), var(--panel-2));
-  box-shadow: var(--highlight), var(--shadow-1);
-  font-size: var(--fs-lg);
-  cursor: pointer;
-  transition:
-    transform var(--dur-fast) var(--ease),
-    background var(--dur) var(--ease),
-    box-shadow var(--dur) var(--ease);
-}
-.key:active {
-  transform: scale(0.97);
-  background: var(--panel-3);
-}
-.key.enter {
-  background: linear-gradient(180deg, var(--accent-hover), var(--accent));
-  border-color: var(--accent);
-  color: var(--accent-ink);
-  font-weight: bold;
-}
-.key:disabled {
-  opacity: 0.4;
-  cursor: default;
-}
-@media (hover: hover) {
-  .key:not(:disabled):hover {
-    border-color: var(--accent);
-    box-shadow: var(--highlight), var(--accent-glow);
-  }
-}
-
-.choices {
-  display: grid;
-  gap: var(--sp-2);
-  margin-top: var(--sp-3);
-}
-.text-input {
-  display: flex;
-  gap: var(--sp-2);
-  margin-top: var(--sp-3);
-}
-.text-input input {
-  flex: 1;
-  min-width: 0;
-  min-height: var(--tap-comfy);
-  border-radius: var(--r-md);
-  border: 1px solid var(--line);
-  background: var(--bg-deep);
-  box-shadow: var(--shadow-inset);
-  padding: 0 var(--sp-3);
-  font-size: 16px; /* iOS のズーム防止（これより小さくしない） */
-}
-.wrong {
-  color: var(--danger);
-  text-align: center;
-  margin-top: var(--sp-2h);
-}
-.hints {
-  margin-top: var(--sp-4);
-  display: grid;
-  gap: var(--sp-2);
-}
-.hint {
-  background: var(--accent-soft);
-  border-left: 3px solid var(--accent);
-  padding: var(--sp-2) var(--sp-2h);
-  border-radius: var(--r-sm);
-  font-size: var(--fs-sm);
-}
-.solved-box {
-  margin-top: var(--sp-4);
-  padding: var(--sp-3);
-  border-radius: var(--r-md);
-  background: var(--ok-soft);
-  display: grid;
-  gap: var(--sp-2);
-}
-.solved-mark {
-  color: var(--ok);
-  font-weight: bold;
-}
-
+/* ---------- 証拠の表示 ---------- */
 .evidence-card {
   background: var(--panel-2);
   border-radius: var(--r-md);
@@ -393,43 +213,6 @@
 .evidence-list p {
   font-size: var(--fs-sm);
   margin: var(--sp-1) 0 0;
-}
-
-/* 見取り図 */
-.map-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  grid-auto-rows: 64px;
-  gap: var(--sp-1h);
-}
-.map-cell {
-  border: 1px dashed var(--line);
-  border-radius: var(--r-sm);
-  display: grid;
-  place-content: center;
-  text-align: center;
-  font-family: var(--font-sans);
-  font-size: var(--fs-xs);
-  line-height: var(--lh-ui);
-  color: var(--muted);
-}
-.map-cell small {
-  font-size: var(--fs-xs);
-}
-.map-cell.seen {
-  border-style: solid;
-  color: var(--text);
-  background: var(--panel-2);
-}
-.map-cell.current {
-  border-color: var(--accent);
-  box-shadow: var(--accent-glow);
-  color: var(--accent);
-}
-.map-note {
-  font-size: var(--fs-sm);
-  color: var(--muted);
-  margin-top: var(--sp-3);
 }
 
 /* 図版 */
@@ -535,7 +318,7 @@
 .toast {
   position: fixed;
   left: 50%;
-  /* 謎のモーダルは下から開くため、操作ボタンと重ならないよう上部に出す */
+  /* 謎の画面は下から開くため、操作ボタンと重ならないよう上部に出す */
   top: calc(56px + env(safe-area-inset-top));
   transform: translateX(-50%);
   background: var(--ok);
@@ -595,18 +378,6 @@
 }
 
 /* ---------- 成績（ヒント・誤答） ---------- */
-.puzzle-stats {
-  display: flex;
-  gap: var(--sp-3);
-  margin: calc(-1 * var(--sp-1h)) 0 var(--sp-3);
-  font-family: var(--font-sans);
-  font-size: var(--fs-sm);
-  color: var(--muted);
-}
-.puzzle-stats .has-mistakes {
-  color: var(--danger);
-}
-
 .score-summary {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -715,54 +486,7 @@
   align-items: center;
 }
 
-/* ---------- 手がかりと、答えられない謎 ---------- */
-.clues {
-  margin: var(--sp-3) 0;
-}
-.clues h3 {
-  margin: 0 0 var(--sp-1h);
-  font-family: var(--font-sans);
-  font-size: var(--fs-sm);
-  color: var(--muted);
-}
-.clues ul {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-  display: grid;
-  gap: var(--sp-1h);
-}
-.clue {
-  padding: var(--sp-2) var(--sp-2h);
-  border-radius: var(--r-sm);
-  font-size: var(--fs-sm);
-  line-height: 1.7;
-}
-.clue.found {
-  background: var(--ok-soft);
-  border-left: 3px solid var(--ok);
-}
-.clue.missing {
-  border: 1px dashed var(--line);
-  color: var(--muted);
-}
-.locked-box {
-  margin-top: var(--sp-4);
-  padding: var(--sp-3) var(--sp-3h);
-  border-radius: var(--r-md);
-  background: var(--panel-2);
-  border: 1px solid var(--line);
-}
-.locked-title {
-  font-weight: bold;
-  color: var(--accent);
-  margin-bottom: var(--sp-1);
-}
-.locked-box ul {
-  margin: var(--sp-1) 0 0;
-  padding-left: 1.2em;
-  font-size: var(--fs-sm);
-}
+/* ---------- 凡例 ---------- */
 .legend {
   font-family: var(--font-sans);
   font-size: var(--fs-xs);
@@ -772,22 +496,13 @@
 
 /* ---------- 動きを減らす設定 ----------
  * index.css の共通指定で継続時間を 0 にするのに加え、
- * 揺れ・スライド・拡大縮小は、最初から動かさない（誤答は枠の色で知らせる）。 */
+ * スライド・拡大縮小は、最初から動かさない。 */
 @media (prefers-reduced-motion: reduce) {
-  .modal,
-  .modal-backdrop,
   .guide,
-  .toast,
-  .shake {
+  .toast {
     animation: none;
   }
-  .modal.shake {
-    box-shadow:
-      inset 0 0 0 2px var(--danger),
-      var(--shadow-3);
-  }
-  .btn:active,
-  .key:active {
+  .btn:active {
     transform: none;
   }
 }

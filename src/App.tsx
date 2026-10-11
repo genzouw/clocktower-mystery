@@ -1,7 +1,6 @@
 import { Suspense, lazy, useCallback, useEffect, useMemo, useReducer, useState } from 'react'
 import './App.css'
 import './Hud.css'
-import './Focus.css'
 import { solveToast, tapOutcome } from './game/hotspot'
 import { SCENARIOS } from './game/scenarios'
 import { puzzleStats } from './game/score'
