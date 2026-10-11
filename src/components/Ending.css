@@ -1,11 +1,14 @@
 /*
  * エンディング。結末 → 推理のまとめ（1 項目ずつ）→ 後日談 → 成績 → ボタンの順に現れる。
- * 順番は要素の style="--i: n" で決める。
+ * 順番は要素の style="--i: n" で決める。ボタン群（.ending-actions）は遅延なしで最初から見える。
+ * 全部すぐ表示するときは、画面に .revealed が付き、動きを止める（段階表示の間隔は endingReveal.ts と合わせる）。
  */
 @keyframes reveal-in {
   from {
     opacity: 0;
     transform: translateY(12px);
+    /* 現れるまでは、見えないまま詳細（summary）へフォーカスが当たらないようにする */
+    visibility: hidden;
   }
 }
 
@@ -29,8 +32,17 @@
   width: 100%;
 }
 
-/* 動きを減らす設定では、時間差をつけず、最初から全部を表示する */
+/* 段階表示を飛ばしたあと、または動きを減らす設定では、時間差をつけず全部を表示する */
+.ending-screen.revealed .reveal {
+  animation: none;
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+}
 @media (prefers-reduced-motion: reduce) {
+  .ending-skip {
+    display: none;
+  }
   .ending-screen .reveal {
     animation: none;
     opacity: 1;
