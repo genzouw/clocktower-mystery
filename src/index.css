@@ -53,6 +53,8 @@
   --fs-lg: 1.25rem; /* 20px: 見出し */
   --fs-xl: 1.75rem; /* 28px: 数値・順位 */
   --fs-2xl: 2.25rem; /* 36px: 画面の題名 */
+  --fs-glyph: 1.6rem; /* 25.6px: 錠・暗号の記号 */
+  --fs-hero: 3.5rem; /* 56px: タイトルの絵文字 */
 
   --lh-body: 1.8;
   --lh-ui: 1.5;
@@ -61,9 +63,13 @@
   --tracking-heading: 0.06em;
 
   /* ---------- 余白（4px を基準にした尺度） ---------- */
+  --sp-0: 2px;
   --sp-1: 4px;
+  --sp-1h: 6px;
   --sp-2: 8px;
+  --sp-2h: 10px;
   --sp-3: 12px;
+  --sp-3h: 14px;
   --sp-4: 16px;
   --sp-5: 24px;
   --sp-6: 32px;
@@ -76,7 +82,9 @@
   /* ---------- 角丸 ---------- */
   --r-xs: 4px;
   --r-sm: 8px;
+  --r-ms: 10px;
   --r-md: 12px;
+  --r-ml: 14px;
   --r-lg: 18px;
   --r-pill: 999px;
 
@@ -112,6 +120,14 @@
  * 「:root, [data-scenario]」に書くのは、要素ごとに --accent を差し替えたとき、
  * 導出色も同じ要素で再計算されるようにするため（:root だけに書くと、差し替えが導出色へ届かない）。
  *
+ * color-mix() 非対応の環境（Chrome 107〜110、Safari 16.0〜16.1）では、var() に color-mix() を
+ * 含む宣言が「計算時に無効」になり、背景が transparent になる。そこで次の 2 段にする。
+ *   1. 既定のアクセント色（#e0b354）と面の色（--panel）から計算した固定値を先に置く。
+ *   2. @supports で color-mix() が使えるときだけ、--accent に追従する式で上書きする。
+ * 限界: 非対応環境では、--accent を差し替えても導出色（--accent-hover など）は既定の金色のまま。
+ * 差し替えたアクセントの面（--accent）と文字（--accent-ink）は追従するので、ボタンの文字は読める。
+ * 固定値を変えるときは、既定の --accent・--panel の値から計算し直す。
+ *
  * シナリオごとに色を変えるときは、<html data-scenario="…"> を付け、
  * 次の形で --accent と --accent-ink だけを上書きする。
  *   [data-scenario='observatory'] {
@@ -123,10 +139,24 @@
  */
 :root,
 [data-scenario] {
-  --accent-hover: color-mix(in srgb, var(--accent) 86%, white);
-  --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
-  --accent-glow: 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent);
-  --ok-soft: color-mix(in srgb, var(--ok) 14%, transparent);
+  --accent-hover: #e4be6c; /* --accent 86% + 白 14% */
+  --accent-soft: rgba(224, 179, 84, 0.14);
+  --accent-glow: 0 0 14px rgba(224, 179, 84, 0.55);
+  --accent-knob: rgba(224, 179, 84, 0.75);
+  --ok-soft: rgba(124, 196, 154, 0.14);
+  --panel-top: #2a252d; /* --panel 95% + 白 5%: パネルの上端の明るさ */
+}
+
+@supports (color: color-mix(in srgb, red, blue)) {
+  :root,
+  [data-scenario] {
+    --accent-hover: color-mix(in srgb, var(--accent) 86%, white);
+    --accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
+    --accent-glow: 0 0 14px color-mix(in srgb, var(--accent) 55%, transparent);
+    --accent-knob: color-mix(in srgb, var(--accent) 75%, transparent);
+    --ok-soft: color-mix(in srgb, var(--ok) 14%, transparent);
+    --panel-top: color-mix(in srgb, var(--panel) 95%, white);
+  }
 }
 
 * {
@@ -179,7 +209,7 @@ h3 {
 }
 
 p {
-  margin: 0 0 10px;
+  margin: 0 0 var(--sp-2h);
   line-height: var(--lh-body);
   text-wrap: pretty;
 }

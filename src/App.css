@@ -72,7 +72,7 @@
 }
 .btn.big {
   font-size: var(--fs-lg);
-  padding: 14px var(--sp-6);
+  padding: var(--sp-3h) var(--sp-6);
 }
 @media (hover: hover) {
   .btn:not(:disabled):hover {
@@ -130,7 +130,7 @@
   background: var(--hud-surface);
   border: 1px solid var(--line);
   border-radius: var(--r-sm);
-  padding: 1px 6px;
+  padding: 1px var(--sp-1h);
   margin-right: var(--sp-1);
 }
 .progress {
@@ -157,7 +157,7 @@
   animation: fade-in var(--dur-slow) var(--ease);
 }
 .guide p {
-  margin: 2px 0;
+  margin: var(--sp-0) 0;
   text-wrap: nowrap; /* p の text-wrap: pretty が親の nowrap を上書きするため */
 }
 
@@ -178,7 +178,7 @@
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: color-mix(in srgb, var(--accent) 75%, transparent);
+  background: var(--accent-knob);
   box-shadow: var(--shadow-2);
   pointer-events: none;
 }
@@ -212,11 +212,7 @@
   max-width: 480px;
   max-height: 88dvh;
   overflow-y: auto;
-  background: linear-gradient(
-    180deg,
-    color-mix(in srgb, var(--panel) 95%, white),
-    var(--panel) 120px
-  );
+  background: linear-gradient(180deg, var(--panel-top), var(--panel) 120px);
   border-radius: var(--r-lg) var(--r-lg) 0 0;
   box-shadow: var(--shadow-3), var(--highlight);
   padding: var(--sp-5) var(--sp-4) calc(var(--sp-5) + env(safe-area-inset-bottom));
@@ -242,7 +238,7 @@
   border: none;
   border-radius: var(--r-pill);
   background: none;
-  font-size: 1.75rem;
+  font-size: var(--fs-xl);
   line-height: 1;
   cursor: pointer;
   transition: background var(--dur) var(--ease);
@@ -255,7 +251,7 @@
 }
 
 .question p {
-  margin-bottom: 6px;
+  margin-bottom: var(--sp-1h);
   letter-spacing: 0.04em;
 }
 
@@ -263,14 +259,14 @@
 .code-slots {
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: var(--sp-2h);
   margin: var(--sp-4) 0;
 }
 .code-slot {
   width: 48px;
   height: 58px;
   border: 2px solid var(--accent);
-  border-radius: 10px;
+  border-radius: var(--r-ms);
   display: grid;
   place-items: center;
   font-size: var(--fs-xl);
@@ -343,7 +339,7 @@
 .wrong {
   color: var(--danger);
   text-align: center;
-  margin-top: 10px;
+  margin-top: var(--sp-2h);
 }
 .hints {
   margin-top: var(--sp-4);
@@ -353,7 +349,7 @@
 .hint {
   background: var(--accent-soft);
   border-left: 3px solid var(--accent);
-  padding: var(--sp-2) 10px;
+  padding: var(--sp-2) var(--sp-2h);
   border-radius: var(--r-sm);
   font-size: var(--fs-sm);
 }
@@ -391,8 +387,8 @@
 }
 .evidence-list li {
   background: var(--panel-2);
-  padding: 10px var(--sp-3);
-  border-radius: 10px;
+  padding: var(--sp-2h) var(--sp-3);
+  border-radius: var(--r-ms);
 }
 .evidence-list p {
   font-size: var(--fs-sm);
@@ -404,7 +400,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   grid-auto-rows: 64px;
-  gap: 6px;
+  gap: var(--sp-1h);
 }
 .map-cell {
   border: 1px dashed var(--line);
@@ -460,13 +456,13 @@
 .seats-row {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 6px;
-  margin-top: 6px;
+  gap: var(--sp-1h);
+  margin-top: var(--sp-1h);
 }
 .seat {
   background: var(--panel-2);
   border-radius: var(--r-sm);
-  padding: 6px 0;
+  padding: var(--sp-1h) 0;
   display: grid;
 }
 .seat small {
@@ -480,7 +476,7 @@
 .books {
   display: flex;
   justify-content: center;
-  gap: 10px;
+  gap: var(--sp-2h);
   margin: var(--sp-3) 0;
 }
 .book {
@@ -496,20 +492,20 @@
 .magic {
   display: grid;
   grid-template-columns: repeat(3, 64px);
-  gap: 6px;
+  gap: var(--sp-1h);
   justify-content: center;
   margin: var(--sp-3) 0;
 }
 .magic-cell {
   height: 64px;
   background: var(--wood-dark);
-  border-radius: 10px;
+  border-radius: var(--r-ms);
   display: grid;
   place-items: center;
   position: relative;
 }
 .magic-cell .pot {
-  font-size: 1.6rem;
+  font-size: var(--fs-glyph);
   opacity: 0.6;
 }
 .magic-cell b {
@@ -527,7 +523,7 @@
   background: var(--paper);
   color: var(--paper-ink);
   text-align: center;
-  font-size: 1.6rem;
+  font-size: var(--fs-glyph);
   letter-spacing: 0.3em;
   padding: var(--sp-4);
   border-radius: var(--r-xs);
@@ -544,7 +540,7 @@
   transform: translateX(-50%);
   background: var(--ok);
   color: var(--ok-ink);
-  padding: 10px var(--sp-4);
+  padding: var(--sp-2h) var(--sp-4);
   box-shadow: var(--shadow-2);
   font-size: var(--fs-sm);
   line-height: var(--lh-ui);
@@ -566,7 +562,7 @@
   background: radial-gradient(circle at 50% 0%, var(--aura) 0%, var(--bg) 70%);
 }
 .title-emoji {
-  font-size: 3.5rem;
+  font-size: var(--fs-hero);
 }
 .title-screen h1,
 .ending-screen h1 {
@@ -580,9 +576,9 @@
 .explain {
   margin-top: var(--sp-5);
   text-align: left;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 95%, white), var(--panel));
+  background: linear-gradient(180deg, var(--panel-top), var(--panel));
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--r-ml);
   box-shadow: var(--shadow-2), var(--highlight);
   padding: var(--sp-4);
   width: 100%;
@@ -590,7 +586,7 @@
 .howto ul,
 .explain ol {
   padding-left: 1.2em;
-  margin: 0 0 10px;
+  margin: 0 0 var(--sp-2h);
   font-size: var(--fs-sm);
   line-height: 1.8;
 }
@@ -602,7 +598,7 @@
 .puzzle-stats {
   display: flex;
   gap: var(--sp-3);
-  margin: -6px 0 var(--sp-3);
+  margin: calc(-1 * var(--sp-1h)) 0 var(--sp-3);
   font-family: var(--font-sans);
   font-size: var(--fs-sm);
   color: var(--muted);
@@ -620,10 +616,10 @@
 .score-tile {
   background: var(--panel-2);
   border-radius: var(--r-md);
-  padding: 10px 6px;
+  padding: var(--sp-2h) var(--sp-1h);
   text-align: center;
   display: grid;
-  gap: 2px;
+  gap: var(--sp-0);
 }
 .score-label {
   font-family: var(--font-sans);
@@ -640,7 +636,7 @@
   font-family: var(--font-sans);
   font-size: var(--fs-xs);
   color: var(--muted);
-  margin-left: 2px;
+  margin-left: var(--sp-0);
 }
 
 .score-table {
@@ -674,7 +670,7 @@
 .score-table .puzzle-number {
   font-size: var(--fs-xs);
   color: var(--muted);
-  margin-right: 6px;
+  margin-right: var(--sp-1h);
 }
 .score-table tr.pending .puzzle-name,
 .score-table tr.pending .status {
@@ -687,9 +683,9 @@
 .result {
   margin-top: var(--sp-4);
   width: 100%;
-  background: linear-gradient(180deg, color-mix(in srgb, var(--panel) 95%, white), var(--panel));
+  background: linear-gradient(180deg, var(--panel-top), var(--panel));
   border: 1px solid var(--line);
-  border-radius: 14px;
+  border-radius: var(--r-ml);
   box-shadow: var(--shadow-2), var(--highlight);
   padding: var(--sp-4);
   text-align: left;
@@ -697,7 +693,7 @@
 .rank {
   text-align: center;
   font-size: var(--fs-md);
-  margin-bottom: 2px;
+  margin-bottom: var(--sp-0);
 }
 .rank b {
   font-size: var(--fs-xl);
@@ -724,7 +720,7 @@
   margin: var(--sp-3) 0;
 }
 .clues h3 {
-  margin: 0 0 6px;
+  margin: 0 0 var(--sp-1h);
   font-family: var(--font-sans);
   font-size: var(--fs-sm);
   color: var(--muted);
@@ -734,10 +730,10 @@
   padding: 0;
   margin: 0;
   display: grid;
-  gap: 6px;
+  gap: var(--sp-1h);
 }
 .clue {
-  padding: var(--sp-2) 10px;
+  padding: var(--sp-2) var(--sp-2h);
   border-radius: var(--r-sm);
   font-size: var(--fs-sm);
   line-height: 1.7;
@@ -752,7 +748,7 @@
 }
 .locked-box {
   margin-top: var(--sp-4);
-  padding: var(--sp-3) 14px;
+  padding: var(--sp-3) var(--sp-3h);
   border-radius: var(--r-md);
   background: var(--panel-2);
   border: 1px solid var(--line);
@@ -771,7 +767,7 @@
   font-family: var(--font-sans);
   font-size: var(--fs-xs);
   color: var(--muted);
-  margin-top: 6px;
+  margin-top: var(--sp-1h);
 }
 
 /* ---------- 動きを減らす設定 ----------
