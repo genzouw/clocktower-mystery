@@ -22,7 +22,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '柱時計',
         x: 20,
         y: 62,
-        text: '玄関の大きな柱時計。止まったまま、0時15分を指している。振り子の扉に 4桁の錠が掛かっている。',
+        text: '玄関の大きな柱時計。振り子が止まったまま、静かに立っている。',
         puzzle: 'q1',
       },
       {
@@ -65,7 +65,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '星空の油絵',
         x: 22,
         y: 62,
-        text: '博士が描いた星空の油絵。星の並びが、どこか不自然だ。',
+        text: '博士が描いた星空の油絵。額の縁に、薄く埃が積もっている。',
         puzzle: 'q6',
         concealed: true,
       },
@@ -106,7 +106,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '暖炉の前の椅子',
         x: 50,
         y: 56,
-        text: '暖炉の前に椅子が並ぶ。ここで、停電のあいだの居場所を一人ずつ聞き取れそうだ。',
+        text: '暖炉の前に椅子が並ぶ。',
         puzzle: 'q2',
       },
       {
@@ -158,7 +158,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '読書机',
         x: 80,
         y: 70,
-        text: '氷室がよく使う机だ。',
+        text: '書庫の隅にある読書机。読みかけの本が伏せてある。',
       },
     ],
   },
@@ -177,7 +177,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '乾板の箱',
         x: 50,
         y: 42,
-        text: '棚に写真乾板の箱が 3つ並ぶ。管理人の雪村は「札は 3つとも、わざと違う箱に貼ってある」と言う。',
+        text: '棚に写真乾板の箱が並んでいる。どれも古く、角が擦り切れている。',
         puzzle: 'q3',
       },
       {
@@ -216,7 +216,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '鍵束',
         x: 50,
         y: 58,
-        text: '管理人の鍵束が、テーブルに置き忘れてある。金・銀・銅・鉄・真鍮の 5本に札が付いている。',
+        text: '管理人の鍵束が、テーブルに置き忘れてある。',
         puzzle: 'q10',
       },
       {
@@ -255,7 +255,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '二つの升',
         x: 50,
         y: 40,
-        text: '戸棚の上に、5デシリットルと 3デシリットルの升が置いてある。戸棚には 1桁の数字錠が掛かっている。',
+        text: '戸棚の上に、大きさの違う升が二つ置いてある。',
         puzzle: 'q7',
       },
       {
@@ -295,7 +295,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '望遠鏡の架台',
         x: 22,
         y: 38,
-        text: '書斎の小さな望遠鏡。架台に 4桁の錠が付いていて、博士の走り書きが添えてある。',
+        text: '書斎の小さな望遠鏡。窓の外の雪明かりを受けて、鈍く光っている。',
         puzzle: 'q4',
       },
       {
@@ -304,7 +304,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '博士の手帳',
         x: 55,
         y: 36,
-        text: '机の上に、博士の手帳がある。最後のページにだけ、意味の通らない文字が並ぶ。',
+        text: '机の上に、博士の手帳がある。',
         puzzle: 'q5',
       },
       {
@@ -344,7 +344,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '金庫',
         x: 22,
         y: 60,
-        text: '壁に埋め込まれた金庫。3桁の数字錠が掛かっている。扉の内側の板に何か刻まれている。',
+        text: '壁に埋め込まれた、重そうな金庫。表面は冷たく、傷ひとつない。',
         puzzle: 'q8',
       },
       {
@@ -380,7 +380,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '配電盤',
         x: 20,
         y: 40,
-        text: '館の配電盤。1〜4番のブレーカーが並ぶ。今はすべて入っている。',
+        text: '地下の壁に据えられた、灰色の配電盤。古いが、手入れはされている。',
         puzzle: 'q9',
         concealed: true,
       },
@@ -390,7 +390,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '乾燥棚の長靴',
         x: 78,
         y: 40,
-        text: '乾燥棚に、名札付きの長靴が並んでいる。',
+        text: '乾燥棚に、長靴が持ち主ごとに揃えて並んでいる。',
         evidence: 'soles',
       },
       {
@@ -418,7 +418,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '記録装置',
         x: 20,
         y: 40,
-        text: 'ドームの観測記録装置。止まったままだ。制御盤に星座の記号と 4桁の錠が並ぶ。',
+        text: 'ドームの観測記録装置。止まったままだ。',
         puzzle: 'q11',
       },
       {
@@ -427,7 +427,7 @@ export const ROOMS: Record<RoomId, Room> = {
         name: '大望遠鏡',
         x: 50,
         y: 34,
-        text: 'ドームの中央に据えられた大望遠鏡。乾板は、ここの記録装置から消えた。',
+        text: 'ドームの中央に据えられた大望遠鏡。天井の切れ目から、雪雲のあいだの星がひとつだけ見える。鏡筒には霜が付いている。',
         puzzle: 'q12',
       },
       {
