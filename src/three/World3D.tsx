@@ -1,6 +1,7 @@
 import { Canvas, useFrame, useThree, type ThreeEvent } from '@react-three/fiber'
 import { useEffect, useRef, useState } from 'react'
-import type { Mesh, PointLight, Sprite } from 'three'
+import { AdditiveBlending, Vector3 } from 'three'
+import type { Group, Mesh, MeshBasicMaterial, PointLight, Sprite, SpriteMaterial } from 'three'
 import { hotspotAppearance, type HotspotAppearance } from '../game/hotspot'
 import type { Hotspot, PuzzleId, RoomId, Scenario } from '../game/types'
 import {
@@ -19,7 +20,11 @@ import {
 } from '../game/world'
 import { Joystick } from './Joystick'
 import { PlayerRig } from './playerRig'
-import { emojiTexture, labelTexture } from './textures'
+import { labelDistanceScale, labelPixelRatio, reachEmphasis } from './labelStyle'
+import { emojiTexture, glowTexture, labelTexture } from './textures'
+
+/** 名札の距離の計算に使う作業用ベクトル */
+const worldPoint = new Vector3()
 
 const EYE_HEIGHT = 1.6
 const WALK_SPEED = 2.6
@@ -117,6 +122,7 @@ export function World3D(props: Props) {
           scenario={props.scenario}
           world={props.world}
           solved={props.solved}
+          rig={rig}
           onTap={tapHotspot}
         />
       </Canvas>
@@ -257,17 +263,38 @@ function Label({
   position,
   height = 0.26,
   color,
+  groupRef,
 }: {
   text: string
   position: [number, number, number]
   height?: number
   color?: string
+  /** 名札の位置を原点にした入れ物。強調で拡大するときに使う */
+  groupRef?: React.Ref<Group>
 }) {
-  const { texture, aspect } = labelTexture(text, color)
+  const { texture, aspect } = labelTexture(
+    text,
+    color,
+    undefined,
+    labelPixelRatio(window.devicePixelRatio),
+  )
+  // 近いと小さく、遠いと大きく出して、画面上の大きさが極端に変わらないようにする
+  const scaler = useRef<Group>(null)
+  const camera = useThree((s) => s.camera)
+  useFrame(() => {
+    const g = scaler.current
+    if (!g) return
+    g.getWorldPosition(worldPoint)
+    g.scale.setScalar(labelDistanceScale(camera.position.distanceTo(worldPoint)))
+  })
   return (
-    <sprite position={position} scale={[height * aspect, height, 1]}>
-      <spriteMaterial map={texture} transparent depthWrite={false} />
-    </sprite>
+    <group ref={groupRef} position={position}>
+      <group ref={scaler}>
+        <sprite scale={[height * aspect, height, 1]}>
+          <spriteMaterial map={texture} transparent depthWrite={false} />
+        </sprite>
+      </group>
+    </group>
   )
 }
 
@@ -359,11 +386,13 @@ function Hotspots({
   scenario,
   world,
   solved,
+  rig,
   onTap,
 }: {
   scenario: Scenario
   world: World
   solved: PuzzleId[]
+  rig: PlayerRig
   onTap: (room: RoomId, h: Hotspot) => void
 }) {
   return (
@@ -376,6 +405,7 @@ function Hotspots({
             room={room.id}
             hotspot={h}
             appearance={hotspotAppearance(scenario, h, solved)}
+            rig={rig}
             onTap={onTap}
           />
         )),
@@ -389,11 +419,13 @@ function HotspotObject({
   room,
   hotspot,
   appearance,
+  rig,
   onTap,
 }: {
   world: World
   room: RoomId
   hotspot: Hotspot
+  rig: PlayerRig
   /** 輪と名札の見た目。シナリオの目印の設定と謎の状態から決まる */
   appearance: HotspotAppearance
   onTap: (room: RoomId, h: Hotspot) => void
@@ -401,17 +433,31 @@ function HotspotObject({
   const p = hotspotPosition(world, room, hotspot)
   const icon = useRef<Sprite>(null)
   const ring = useRef<Mesh>(null)
+  const reachRing = useRef<Mesh>(null)
+  const reachMaterial = useRef<MeshBasicMaterial>(null)
+  const glow = useRef<Sprite>(null)
+  const glowMaterial = useRef<SpriteMaterial>(null)
+  const labelGroup = useRef<Group>(null)
   const plinthHeight = 0.9
   // 位置ごとに位相をずらして、すべての物が揃って揺れないようにする
   const phase = (p.x * 7 + p.z * 13) % (Math.PI * 2)
 
   useFrame(({ clock }) => {
     const t = clock.elapsedTime + phase
-    if (icon.current) icon.current.position.y = plinthHeight + 0.45 + Math.sin(t * 2) * 0.05
+    const bob = plinthHeight + 0.45 + Math.sin(t * 2) * 0.05
+    if (icon.current) icon.current.position.y = bob
+    if (glow.current) glow.current.position.y = bob
     if (ring.current && appearance.pulse) {
       const s = 1 + Math.sin(t * 3) * 0.12
       ring.current.scale.set(s, s, 1)
     }
+    // 調べられる距離に入った物には、謎の有無に関係なく同じ強調を付ける
+    const e = reachEmphasis(rig.distanceTo(p), REACH)
+    if (reachRing.current) reachRing.current.visible = e > 0
+    if (reachMaterial.current) reachMaterial.current.opacity = e * 0.85
+    if (glow.current) glow.current.visible = e > 0
+    if (glowMaterial.current) glowMaterial.current.opacity = e * 0.8
+    labelGroup.current?.scale.setScalar(1 + e * 0.12)
   })
 
   const handleClick = (e: ThreeEvent<MouseEvent>) => {
@@ -435,6 +481,21 @@ function HotspotObject({
           <meshBasicMaterial color={appearance.ringColor} />
         </mesh>
       )}
+      {/* 調べられる距離に入ると、全部の物の足元に同じ輪が出る */}
+      <mesh ref={reachRing} rotation-x={-Math.PI / 2} position-y={0.02} visible={false}>
+        <ringGeometry args={[0.62, 0.72, 40]} />
+        <meshBasicMaterial ref={reachMaterial} color="#fff1c9" transparent depthWrite={false} />
+      </mesh>
+      {/* 物の背後の光。調べられる距離に入った物すべてに同じものが付く */}
+      <sprite ref={glow} position-y={plinthHeight + 0.45} scale={[1.5, 1.5, 1]} visible={false}>
+        <spriteMaterial
+          ref={glowMaterial}
+          map={glowTexture().texture}
+          transparent
+          depthWrite={false}
+          blending={AdditiveBlending}
+        />
+      </sprite>
       <sprite
         ref={icon}
         position-y={plinthHeight + 0.45}
@@ -448,6 +509,7 @@ function HotspotObject({
         position={[0, plinthHeight + 1.05, 0]}
         height={0.22}
         color={appearance.labelColor}
+        groupRef={labelGroup}
       />
     </group>
   )
