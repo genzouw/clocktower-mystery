@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef } from 'react'
 import type { ReactNode } from 'react'
+import { shouldCloseOnBackdropClick } from './puzzleInput'
 import './Dialog.css'
 
 interface Props {
@@ -48,6 +49,8 @@ export function Dialog({ title, onClose, meta, children, footer, className }: Pr
   const titleId = useId()
   const panelRef = useRef<HTMLDivElement>(null)
   const titleRef = useRef<HTMLHeadingElement>(null)
+  // 押し始めた位置。パネル内で押して背景で離したときに閉じないよう、クリックと合わせて判定する
+  const pressTargetRef = useRef<EventTarget | null>(null)
   // 親が毎回新しい関数を渡しても、フォーカスの処理を再実行しないように参照で持つ
   const onCloseRef = useRef(onClose)
   useEffect(() => {
@@ -114,8 +117,13 @@ export function Dialog({ title, onClose, meta, children, footer, className }: Pr
   return (
     <div
       className="dialog-backdrop"
+      onPointerDown={(e) => {
+        pressTargetRef.current = e.target
+      }}
       onClick={(e) => {
-        if (e.target === e.currentTarget) onClose()
+        const press = pressTargetRef.current
+        pressTargetRef.current = null
+        if (shouldCloseOnBackdropClick(press, e.target, e.currentTarget)) onClose()
       }}
     >
       <div

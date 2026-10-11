@@ -4,6 +4,7 @@ import { missingTitles } from '../game/hotspot'
 import type { Puzzle, PuzzleId, Scenario } from '../game/types'
 import { Dialog } from './Dialog'
 import { Figure } from './Figure'
+import { focusKindOf, shouldSubmitOnEnter } from './puzzleInput'
 import './PuzzleModal.css'
 
 interface Props {
@@ -113,9 +114,9 @@ export function PuzzleModal({
         pressKey('⌫')
       } else if (
         e.key === 'Enter' &&
-        input.length === puzzle.length &&
-        // ボタンにフォーカスがあるときは、そのボタンの押下に任せる
-        !(document.activeElement instanceof HTMLButtonElement)
+        // 桁がそろっていれば、ヒントのボタンにフォーカスがあっても送信を優先する。
+        // 画面キーと × は、そのボタン自身の操作に任せる
+        shouldSubmitOnEnter(input.length, puzzle.length, focusKindOf(document.activeElement))
       ) {
         e.preventDefault()
         pressKey('✓')
@@ -162,7 +163,13 @@ export function PuzzleModal({
     <div ref={answerRef} className={`pz-answer pz-answer-${puzzle.kind}`}>
       {/* 誤答の知らせは、読み上げにも届くよう領域を常に置いておく */}
       <p className="pz-feedback" role="status">
-        {wrongCount > 0 && <span className="pz-wrong">違うようだ……もう一度考えてみよう</span>}
+        {wrongCount > 0 && (
+          // key を誤答のたびに変え、同じ誤答が続いても読み上げが再度届くようにする。
+          // 淡く現れる動きは初回だけ付け、2 回目以降は見た目を変えない
+          <span key={wrongCount} className={`pz-wrong ${wrongCount === 1 ? 'is-enter' : ''}`}>
+            違うようだ……もう一度考えてみよう
+          </span>
+        )}
       </p>
       {puzzle.kind === 'code' && (
         <>

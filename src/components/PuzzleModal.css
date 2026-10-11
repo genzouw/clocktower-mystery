@@ -279,6 +279,8 @@
 .pz-wrong {
   color: var(--danger);
   font-weight: bold;
+}
+.pz-wrong.is-enter {
   animation: fade-in var(--dur) var(--ease);
 }
 
@@ -325,6 +327,8 @@
   box-shadow: var(--highlight), var(--shadow-1);
   font-size: var(--fs-lg);
   cursor: pointer;
+  /* ダブルタップでの拡大を防ぎ、連打を受け付ける */
+  touch-action: manipulation;
   transition:
     transform var(--dur-fast) var(--ease),
     background var(--dur) var(--ease),
@@ -363,6 +367,7 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 .pz-choice {
+  touch-action: manipulation;
   width: 100%;
   overflow-wrap: anywhere;
 }
