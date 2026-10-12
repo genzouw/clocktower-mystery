@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Fragment, useEffect, useId, useRef, useState, type CSSProperties } from 'react'
 import { detectiveRank, totals, type PuzzleStat } from '../game/score'
 import type { Scenario } from '../game/types'
 import { endingScreenClass, revealOrder, revealTotalMs } from './endingReveal'
@@ -31,12 +31,18 @@ function ResetConfirm({
 }) {
   // 押したボタンは確認の間は消えるため、開いたら確認の中（安全側の「やめる」）へフォーカスを移す
   const cancelRef = useRef<HTMLButtonElement>(null)
+  const messageId = useId()
   useEffect(() => {
     cancelRef.current?.focus()
   }, [])
   return (
-    <div className="reset-confirm" role="alertdialog" aria-label={label}>
-      <p>{message}</p>
+    <div
+      className="reset-confirm"
+      role="alertdialog"
+      aria-label={label}
+      aria-describedby={messageId}
+    >
+      <p id={messageId}>{message}</p>
       <button className="btn danger" onClick={onConfirm}>
         {confirmLabel}
       </button>
@@ -162,7 +168,8 @@ export function EndingScreen({
   const headingRef = useRef<HTMLHeadingElement>(null)
   const skipRef = useRef<HTMLButtonElement>(null)
   // 全表示にする。「全部すぐ表示」にフォーカスがあるときは、そのボタンが消えて body へ落ちるため、見出しへ移す
-  // （タイマーの満了・画面のタップ・ボタンのどれで全表示になっても同じ）
+  // タイマーの満了とボタンは、ここで見出しへ移る。画面のタップは、マウスの既定動作が後から body へ blur
+  // するため、pointerdown の側で次のフレームに見出しへ移し直す
   const reveal = () => {
     if (shouldRefocus(document.activeElement, skipRef.current)) headingRef.current?.focus()
     setRevealed(true)
@@ -182,7 +189,9 @@ export function EndingScreen({
     if (revealed) return
     const onPointerDown = (e: PointerEvent) => {
       if (e.target instanceof Element && e.target.closest('button, a, summary')) return
+      const hadFocus = shouldRefocus(document.activeElement, skipRef.current)
       revealRef.current()
+      if (hadFocus) requestAnimationFrame(() => headingRef.current?.focus())
     }
     window.addEventListener('pointerdown', onPointerDown)
     return () => window.removeEventListener('pointerdown', onPointerDown)
