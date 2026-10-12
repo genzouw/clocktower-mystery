@@ -402,6 +402,49 @@
   }
 }
 
+/*
+ * 横向きで縦が短い画面（スマホの横持ちなど）では、問題文と回答欄を左右 2 列に並べる。
+ * 縦に積むと、下に固定した回答欄が画面の 65% を占め、問題文の見える高さが 24px になるため。
+ * 見出しと本文は左、回答欄（footer）は右の列で、回答欄は列の中だけでスクロールする。
+ * 縦長の画面（390x844 など）には当てはまらず、見た目は変わらない。
+ */
+@media (orientation: landscape) and (max-height: 500px) {
+  .dialog.puzzle-dialog {
+    max-width: 720px;
+    height: 92dvh;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+  .puzzle-dialog .dialog-header {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .puzzle-dialog .dialog-body {
+    grid-column: 1;
+    grid-row: 2;
+  }
+  .puzzle-dialog .dialog-footer {
+    grid-column: 2;
+    grid-row: 1 / -1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-top: var(--sp-4);
+    border-top: none;
+    border-left: 1px solid var(--line);
+    box-shadow: none;
+  }
+  /* 右の列は幅が狭いため、文字入力は入力欄の下に回答ボタンを置く */
+  .puzzle-dialog .pz-text {
+    flex-direction: column;
+  }
+  /* 選択肢は、右の列の中でスクロールさせる（自分の上限を外す） */
+  .puzzle-dialog .pz-choices {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
 /* 動きを減らす設定では、揺れ・光らせる演出を出さず、色と枠で伝える（継続時間は index.css が 0 にする） */
 @media (prefers-reduced-motion: reduce) {
   .pz-solved.is-fresh,
