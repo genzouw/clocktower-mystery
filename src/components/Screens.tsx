@@ -1,8 +1,8 @@
-import { Fragment, useEffect, useRef, useState, type CSSProperties } from 'react'
+import { Fragment, useEffect, useId, useRef, useState, type CSSProperties } from 'react'
 import { detectiveRank, totals, type PuzzleStat } from '../game/score'
 import type { Scenario } from '../game/types'
 import { endingScreenClass, revealOrder, revealTotalMs } from './endingReveal'
-import { markerHowto, nextConfirming } from './hud'
+import { markerHowto, nextConfirming, shouldRefocus } from './hud'
 import { ScoreSummary, ScoreTable } from './ScoreTable'
 import './Screens.css'
 import './Title.css'
@@ -29,13 +29,20 @@ function ResetConfirm({
   onConfirm: () => void
   onCancel: () => void
 }) {
+  // 押したボタンは確認の間は消えるため、開いたら確認の中（安全側の「やめる」）へフォーカスを移す
+  const cancelRef = useRef<HTMLButtonElement>(null)
+  const messageId = useId()
+  useEffect(() => {
+    cancelRef.current?.focus()
+  }, [])
   return (
-    <div className="reset-confirm" role="alertdialog" aria-label={label}>
-      <p>{message}</p>
+    // 非モーダルのインライン確認なので、Esc で閉じる・フォーカスを内側に保つ alertdialog ではなく group とする
+    <div className="reset-confirm" role="group" aria-label={label} aria-describedby={messageId}>
+      <p id={messageId}>{message}</p>
       <button className="btn danger" onClick={onConfirm}>
         {confirmLabel}
       </button>
-      <button className="btn ghost" onClick={onCancel}>
+      <button ref={cancelRef} className="btn ghost" onClick={onCancel}>
         やめる
       </button>
     </div>
@@ -57,6 +64,15 @@ export function TitleScreen({
   onBack: () => void
 }) {
   const [confirmingReset, setConfirmingReset] = useState(false)
+  const resetRef = useRef<HTMLButtonElement>(null)
+  const returnFocus = useRef(false)
+  // 「やめる」で確認を閉じたら、押した「はじめから」へフォーカスを戻す
+  useEffect(() => {
+    if (!confirmingReset && returnFocus.current) {
+      returnFocus.current = false
+      resetRef.current?.focus()
+    }
+  }, [confirmingReset])
   return (
     <div className="screen title-screen">
       <div className="title-emoji">{scenario.titleEmoji}</div>
@@ -81,6 +97,7 @@ export function TitleScreen({
       </button>
       {hasProgress && !confirmingReset && (
         <button
+          ref={resetRef}
           className="btn ghost"
           onClick={() => setConfirmingReset((c) => nextConfirming(c, 'ask'))}
         >
@@ -93,7 +110,10 @@ export function TitleScreen({
           message="この事件の進行を消して、最初から始めます。よろしいですか？"
           confirmLabel="進行を消して始める"
           onConfirm={onReset}
-          onCancel={() => setConfirmingReset((c) => nextConfirming(c, 'cancel'))}
+          onCancel={() => {
+            returnFocus.current = true
+            setConfirmingReset((c) => nextConfirming(c, 'cancel'))
+          }}
         />
       )}
       <button className="btn ghost" onClick={onBack}>
@@ -127,14 +147,35 @@ export function EndingScreen({
   const rank = detectiveRank(scenario, sum)
   const { ending } = scenario
   const [confirmingRestart, setConfirmingRestart] = useState(false)
+  const restartRef = useRef<HTMLButtonElement>(null)
+  const returnFocus = useRef(false)
+  // 「やめる」で確認を閉じたら、押した「もう一度遊ぶ」へフォーカスを戻す
+  useEffect(() => {
+    if (!confirmingRestart && returnFocus.current) {
+      returnFocus.current = false
+      restartRef.current?.focus()
+    }
+  }, [confirmingRestart])
   // 結末 → 推理のまとめ（1 項目ずつ）→ 後日談 → 成績 の順に、--i の順番で現れる。ボタン群は最初から見える。
   // 動きを減らす設定では Ending.css が一度に表示する。「全部すぐ表示」か画面のタップで、途中でも全表示にできる
   const step = (i: number) => ({ '--i': i }) as CSSProperties
   const order = revealOrder(ending.steps.length)
   const [revealed, setRevealed] = useState(false)
   const headingRef = useRef<HTMLHeadingElement>(null)
+  const skipRef = useRef<HTMLButtonElement>(null)
+  // 全表示にする。「全部すぐ表示」にフォーカスがあるときは、そのボタンが消えて body へ落ちるため、見出しへ移す
+  // タイマーの満了とボタンは、ここで見出しへ移る。画面のタップは、マウスの既定動作が後から body へ blur
+  // するため、pointerdown の側で次のフレームに見出しへ移し直す
+  const reveal = () => {
+    if (shouldRefocus(document.activeElement, skipRef.current)) headingRef.current?.focus()
+    setRevealed(true)
+  }
+  const revealRef = useRef(reveal)
   useEffect(() => {
-    const t = window.setTimeout(() => setRevealed(true), revealTotalMs(ending.steps.length))
+    revealRef.current = reveal
+  })
+  useEffect(() => {
+    const t = window.setTimeout(() => revealRef.current(), revealTotalMs(ending.steps.length))
     return () => window.clearTimeout(t)
   }, [ending.steps.length])
   // 画面のタップは、キーボード操作の「全部すぐ表示」ボタンの補助。div に onClick を付けると
@@ -142,18 +183,15 @@ export function EndingScreen({
   // ボタン類のタップは除く（押した瞬間に再描画でボタンが消え、click とフォーカス移動が失われるため）
   useEffect(() => {
     if (revealed) return
-    const reveal = (e: PointerEvent) => {
+    const onPointerDown = (e: PointerEvent) => {
       if (e.target instanceof Element && e.target.closest('button, a, summary')) return
-      setRevealed(true)
+      const hadFocus = shouldRefocus(document.activeElement, skipRef.current)
+      revealRef.current()
+      if (hadFocus) requestAnimationFrame(() => headingRef.current?.focus())
     }
-    window.addEventListener('pointerdown', reveal)
-    return () => window.removeEventListener('pointerdown', reveal)
+    window.addEventListener('pointerdown', onPointerDown)
+    return () => window.removeEventListener('pointerdown', onPointerDown)
   }, [revealed])
-  const skip = () => {
-    setRevealed(true)
-    // 押したボタンが消えるので、フォーカスを見出しへ移す
-    headingRef.current?.focus()
-  }
   return (
     <div className={endingScreenClass(revealed)}>
       <div className="title-emoji">🎉</div>
@@ -161,7 +199,7 @@ export function EndingScreen({
         事件解決！
       </h1>
       {!revealed && (
-        <button className="btn ghost ending-skip" onClick={skip}>
+        <button ref={skipRef} className="btn ghost ending-skip" onClick={reveal}>
           全部すぐ表示
         </button>
       )}
@@ -198,6 +236,7 @@ export function EndingScreen({
       <div className="ending-actions">
         {!confirmingRestart && (
           <button
+            ref={restartRef}
             className="btn primary big"
             onClick={() => setConfirmingRestart((c) => nextConfirming(c, 'ask'))}
           >
@@ -210,7 +249,10 @@ export function EndingScreen({
             message="この事件の進行と成績を消して、最初から遊びます。よろしいですか？"
             confirmLabel="進行を消して遊ぶ"
             onConfirm={onRestart}
-            onCancel={() => setConfirmingRestart((c) => nextConfirming(c, 'cancel'))}
+            onCancel={() => {
+              returnFocus.current = true
+              setConfirmingRestart((c) => nextConfirming(c, 'cancel'))
+            }}
           />
         )}
         <button className="btn ghost" onClick={onBack}>

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { clocktower } from '../game/scenarios/clocktower'
 import { endingScreenClass, revealOrder, revealTotalMs } from './endingReveal'
-import { guideVisibleAfter, markerHowto, nextConfirming } from './hud'
+import { guideVisibleAfter, markerHowto, nextConfirming, shouldRefocus } from './hud'
 
 describe('markerHowto', () => {
   it('目印が hidden のシナリオは「目印は付かない」と説明する', () => {
@@ -46,5 +46,18 @@ describe('操作ガイド', () => {
     expect(guideVisibleAfter('first-move')).toBe(false)
     expect(guideVisibleAfter('tap')).toBe(false)
     expect(guideVisibleAfter('show')).toBe(true)
+  })
+})
+
+describe('shouldRefocus', () => {
+  const skip = { tagName: 'BUTTON' } as Element
+  it('消えるボタンにフォーカスがあるときだけ、フォーカスを移す', () => {
+    expect(shouldRefocus(skip, skip)).toBe(true)
+  })
+  it('別の要素・body 相当（null）・ボタンが無いときは移さない', () => {
+    expect(shouldRefocus({ tagName: 'A' } as Element, skip)).toBe(false)
+    expect(shouldRefocus(null, skip)).toBe(false)
+    expect(shouldRefocus(skip, null)).toBe(false)
+    expect(shouldRefocus(null, null)).toBe(false)
   })
 })
