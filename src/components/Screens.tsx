@@ -36,12 +36,8 @@ function ResetConfirm({
     cancelRef.current?.focus()
   }, [])
   return (
-    <div
-      className="reset-confirm"
-      role="alertdialog"
-      aria-label={label}
-      aria-describedby={messageId}
-    >
+    // 非モーダルのインライン確認なので、Esc で閉じる・フォーカスを内側に保つ alertdialog ではなく group とする
+    <div className="reset-confirm" role="group" aria-label={label} aria-describedby={messageId}>
       <p id={messageId}>{message}</p>
       <button className="btn danger" onClick={onConfirm}>
         {confirmLabel}
