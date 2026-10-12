@@ -43,7 +43,7 @@ export function ScenarioSelect({
 }) {
   return (
     <div className="screen scenario-select">
-      <h1>事件ファイル</h1>
+      <h1>時計塔ミステリー 事件ファイル</h1>
       <p className="scenario-select-lead">
         挑む事件を選んでください。進行は事件ごとに保存されます。
       </p>
