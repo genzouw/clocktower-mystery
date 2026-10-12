@@ -14,7 +14,8 @@ const hotspots = rooms.flatMap((r) => r.hotspots.map((h) => ({ room: r.id, h }))
 const findHotspot = (puzzle: PuzzleId) => hotspots.find(({ h }) => h.puzzle === puzzle)!
 
 /** 問題文調の語。物の説明文に書くと、謎のある物が見分けられてしまう（謎の中身は謎の画面で出す） */
-const PUZZLE_WORDS = /錠|札|走り書き|桁|数字|暗証|刻ま|暗号|意味の通らない|手がかり|手掛かり/
+const PUZZLE_WORDS =
+  /錠|札|走り書き|桁|数字|暗証|刻ま|暗号|意味の通らない|手がかり|手掛かり|違和感|妙|奇妙|隠|仕掛/
 
 const stats = (xs: number[]) => {
   const mean = xs.reduce((a, b) => a + b, 0) / xs.length
@@ -280,13 +281,22 @@ describe('シナリオ 2 — 物の説明文で、謎のある物を見分けら
     expect(a.max).toBeLessThanOrEqual(b.max)
   })
 
+  it('質感・光・温度の語を含む割合が、謎のある物と無い物で 20 ポイント以内の差になる', () => {
+    // 語の偏りから謎の場所を当てられないようにする（TASK-103 の実測で使った 7 語の規則）
+    const TEXTURE = /静かに|薄く埃|擦り切れ|鈍く光る|冷たく|古い|霜/
+    const rate = (xs: Hotspot[]) => xs.filter((h) => TEXTURE.test(h.text)).length / xs.length
+    expect(Math.abs(rate(withPuzzle) - rate(plain)) * 100).toBeLessThanOrEqual(20)
+    // 謎の無い物にも同じ種類の語が、ある程度の件数で出る
+    expect(plain.filter((h) => TEXTURE.test(h.text)).length).toBeGreaterThanOrEqual(5)
+  })
+
   it('問題文調の語（錠・札・走り書きなど）が、どの物の説明文にも出ない', () => {
     // 謎のある物だけに偏らない、の最も強い形（どちらにも出さない）。謎の中身は謎の画面で出す
     for (const { h } of hotspots) expect(h.text, h.id).not.toMatch(PUZZLE_WORDS)
   })
 
   it('謎のある物の説明文に、謎の解き方や答えを書かない', () => {
-    const answers = ['2340', '2076', '3241', '840', '4538', '2番と4番', '氷室', '真鍮']
+    const answers = ['2340', '2076', '3241', '840', '4538', '2番と4番', '氷室', '真鍮', '23時40分']
     for (const h of withPuzzle) expect(h.text, h.id).not.toMatch(/\d/)
     // 答えの語は、どの物の説明文にも出ない（氷室は、来客名簿の 6 人の列挙にだけ出る）
     for (const { h } of hotspots) {
