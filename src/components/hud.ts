@@ -25,3 +25,8 @@ export function nextConfirming(confirming: boolean, event: ResetConfirmEvent): b
   if (event === 'cancel' || event === 'confirm') return false
   return confirming
 }
+
+/** 全表示で消えるボタンにフォーカスがあるとき、消える前にフォーカスを別へ移す必要があるか */
+export function shouldRefocus(active: Element | null, button: Element | null): boolean {
+  return active !== null && active === button
+}
