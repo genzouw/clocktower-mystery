@@ -429,10 +429,22 @@
     grid-row: 1 / -1;
     overflow-y: auto;
     overscroll-behavior: contain;
-    padding-top: var(--sp-4);
+    /* 余白を詰める。誤答の知らせが 2 行になっても、667x375 で列の高さに収める */
+    padding-top: var(--sp-3);
+    padding-bottom: calc(var(--sp-2) + env(safe-area-inset-bottom));
     border-top: none;
+    border-top-right-radius: var(--r-lg); /* dialog の上の角丸に合わせる */
     border-left: 1px solid var(--line);
     box-shadow: none;
+  }
+  .puzzle-dialog .pz-answer {
+    gap: var(--sp-1h);
+  }
+  .puzzle-dialog .pz-feedback {
+    line-height: 1.3;
+  }
+  .puzzle-dialog .pz-feedback:empty {
+    margin-top: calc(-1 * var(--sp-1h));
   }
   /* 右の列は幅が狭いため、文字入力は入力欄の下に回答ボタンを置く */
   .puzzle-dialog .pz-text {
