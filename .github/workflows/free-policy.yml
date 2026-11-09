@@ -22,4 +22,4 @@ jobs:
   free-policy:
     # enforce は既定の true。コスト方針に反する設定を検出した PR は job が失敗する。
     # 本リポジトリの workflow は Secrets を参照しないため allowed_secrets は指定しない。
-    uses: genzouw/ci-workflows/.github/workflows/free-policy.yml@97c734014276b4c085753b93ca3a0c7f6c51a21c # v1.5.46
+    uses: genzouw/ci-workflows/.github/workflows/free-policy.yml@500999e18a919d75c1e861ddfa9f3fa229b9f660 # v1.5.47
